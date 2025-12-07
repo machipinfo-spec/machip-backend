@@ -43,7 +43,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
             };
         }
-        const userId = user.userId.getValue();
+        const requestUserId = event.pathParameters?.userId;
+        console.log("Requested userId:", requestUserId);
+        let userId;
+        if (requestUserId === "@self") {
+            userId = user.userId.getValue();
+        }else{
+            userId = requestUserId!;
+        }
         const response = await getProfileUseCase.execute({ userId });
 
         if (!response.profile) {

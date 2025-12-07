@@ -51,7 +51,33 @@ function extractAuthIdFromToken(event: APIGatewayProxyEvent): string | null {
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         let authId = handlerUtil.getAuthId(event);
-        let emailFromClaim = event.requestContext.authorizer?.claims?.email;
+        const claims = event.requestContext.authorizer?.claims as
+        | { [key: string]: any }
+        | undefined;
+        let email = claims?.email;
+        const userName = claims?.['cognito:username'] ?? null;
+
+        // 2025-12-05T15:27:49.688Z	28f9ae8a-f46c-41f3-9a53-7c59b5f55ec7	INFO	claims: {
+        // at_hash: 'JlIbSJNOKtKGS0497LwY4w',
+        // sub: 'd794aa28-c0f1-7087-0f9d-df6fb3129cc7',
+        // email_verified: 'true',
+        // iss: 'https://cognito-idp.ap-northeast-1.amazonaws.com/ap-northeast-1_APNLl7tTu',
+        // 'cognito:username': 'mossan',
+        // origin_jti: '36cc4daf-613e-42ec-939b-7e97775cb9bf',
+        // aud: '3h6mk52ts0npf15ruv45iir4c7',
+        // event_id: '1817624a-380d-4abb-b8f9-6eec772554b5',
+        // token_use: 'id',
+        // auth_time: '1764948424',
+        // nickname: 'しんちゃろ',
+        // exp: 'Fri Dec 05 16:27:04 UTC 2025',
+        // iat: 'Fri Dec 05 15:27:04 UTC 2025',
+        // jti: '9e9999f5-8f02-4fb7-bbfb-e803c9870a6b',
+        // email: 'mosamosa1228@gmail.com'
+        // }
+
+
+        console.log("claims")
+        console.log(event.requestContext.authorizer?.claims)
 
         if (!authId) {
             return {
@@ -62,32 +88,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         // リクエストボディの解析
-        if (!event.body) {
-            return {
-                statusCode: 400,
-                headers: corsHeaders,
-                body: JSON.stringify({ message: 'Request body is required' }),
-            };
-        }
-
-        let requestBody;
-        try {
-            requestBody = JSON.parse(event.body);
-        } catch (parseError) {
-            return {
-                statusCode: 400,
-                headers: corsHeaders,
-                body: JSON.stringify({ message: 'Invalid JSON in request body' }),
-            };
-        }
-
-        const { name, email } = requestBody;
-        if(!emailFromClaim){
-            emailFromClaim = email;
-        }
+        // if (!event.body) {
+        //     return {
+        //         statusCode: 400,
+        //         headers: corsHeaders,
+        //         body: JSON.stringify({ message: 'Request body is required' }),
+        //     };
+        // }
 
         // 必須フィールドの検証
-        if (!name || !emailFromClaim) {
+        if (!email || !userName) {
             return {
                 statusCode: 400,
                 headers: corsHeaders,
@@ -98,7 +108,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const user = await createUserUseCase.execute(authId, name, emailFromClaim);
+        const user = await createUserUseCase.execute(authId, userName, email);
 
         const responseBody: CreateUserResponse = {
             authId: authId,

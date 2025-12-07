@@ -29,7 +29,7 @@ Resources:
       Auth:
         Authorizers:
           CognitoAuthorizer:
-            UserPoolArn: !Sub "arn:aws:cognito-idp:ap-northeast-1:338880795815:userpool/ap-northeast-1_PiUJvDsyB"
+            UserPoolArn: !Sub "arn:aws:cognito-idp:ap-northeast-1:338880795815:userpool/ap-northeast-1_APNLl7tTu"
             Identity:
               Header: Authorization
         DefaultAuthorizer: CognitoAuthorizer
@@ -38,7 +38,7 @@ Resources:
         AllowMethods: "'GET,PUT,POST,DELETE,OPTIONS'"
         AllowOrigin: !If
           - IsStg
-          - "'https://tetra-green.vercel.app'"
+          - "'https://tetra-web-chi.vercel.app'"
           - "'http://localhost:3000'"
         AllowHeaders: "'Content-Type,Authorization'"
         AllowCredentials: true
@@ -61,7 +61,7 @@ Resources:
           - AllowedOrigins:
               - !If
                 - IsStg
-                - "https://tetra-green.vercel.app"
+                - "https://tetra-web-chi.vercel.app"
                 - "http://localhost:3000"
             AllowedMethods:
               - GET
@@ -182,6 +182,40 @@ Resources:
         EntryPoints:
           - index.ts
 
+  # timeline
+  TimelineFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/interfaces/handlers/timeline/
+      Handler: index.lambdaHandler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 512
+      Policies:
+        - SSMParameterWithSlashPrefixReadPolicy:
+            ParameterName: "/tetra/firebase/*"
+        - S3CrudPolicy:
+            BucketName: !Ref ImageBucket
+      Architectures:
+        - x86_64
+      Events:
+        GetThreadList:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Tetra
+            Path: /timeline
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints:
+          - index.ts
+
   # thread
   ThreadFunction:
     Type: AWS::Serverless::Function
@@ -233,52 +267,52 @@ Resources:
           - index.ts
 
   # reaction
-  ReactionFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: src/interfaces/handlers/timeline/reaction/
-      Handler: index.lambdaHandler
-      Runtime: nodejs22.x
-      Timeout: 30
-      MemorySize: 512
-      Policies:
-        - SSMParameterWithSlashPrefixReadPolicy:
-            ParameterName: "/tetra/firebase/*"
-        - S3CrudPolicy:
-            BucketName: !Ref ImageBucket
-      Architectures:
-        - x86_64
-      Events:
-        CreateReaction:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /timeline/reaction
-            Method: POST
-            Auth:
-              Authorizer: CognitoAuthorizer
-        DeleteReaction:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /timeline/reaction
-            Method: DELETE
-            Auth:
-              Authorizer: CognitoAuthorizer
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints:
-          - index.ts
+  # ReactionFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     CodeUri: src/interfaces/handlers/timeline/reaction/
+  #     Handler: index.lambdaHandler
+  #     Runtime: nodejs22.x
+  #     Timeout: 30
+  #     MemorySize: 512
+  #     Policies:
+  #       - SSMParameterWithSlashPrefixReadPolicy:
+  #           ParameterName: "/tetra/firebase/*"
+  #       - S3CrudPolicy:
+  #           BucketName: !Ref ImageBucket
+  #     Architectures:
+  #       - x86_64
+  #     Events:
+  #       CreateReaction:
+  #         Type: Api
+  #         Properties:
+  #           RestApiId: !Ref Tetra
+  #           Path: /timeline/reaction
+  #           Method: POST
+  #           Auth:
+  #             Authorizer: CognitoAuthorizer
+  #       DeleteReaction:
+  #         Type: Api
+  #         Properties:
+  #           RestApiId: !Ref Tetra
+  #           Path: /timeline/reaction
+  #           Method: DELETE
+  #           Auth:
+  #             Authorizer: CognitoAuthorizer
+  #   Metadata:
+  #     BuildMethod: esbuild
+  #     BuildProperties:
+  #       Minify: true
+  #       Target: "es2020"
+  #       Sourcemap: true
+  #       EntryPoints:
+  #         - index.ts
 
   # profile
   ProfileFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/interfaces/handlers/user/profile/
+      CodeUri: src/interfaces/handlers/user/profile
       Handler: index.lambdaHandler
       Runtime: nodejs22.x
       Timeout: 30
@@ -311,7 +345,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref Tetra
-            Path: /user/profile
+            Path: /user/profile/{userId}
             Method: GET
             Auth:
               Authorizer: CognitoAuthorizer

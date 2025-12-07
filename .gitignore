@@ -9,3 +9,5 @@ dist
 .aws-sam
 secret
 test.md
+cognito-policy.json
+create-hash.ps1

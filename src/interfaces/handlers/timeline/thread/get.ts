@@ -43,35 +43,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
             };
         }
-        const { threadId, ownerUserId, timeline, includeChildren, limit } = event.queryStringParameters || {};
-
-        // タイムライン取得
-        if (timeline === 'true') {
-            const result = await timelineReadUseCase.execute(
-                limit ? parseInt(limit, 10) : undefined
-            );
-
-            const responseBody = {
-                threads: result.threads.map(item => ({
-                    thread: {
-                        ...item.thread.toPrimitives(),
-                        createdAt: item.thread.toPrimitives().createdAt.toISOString(),
-                    },
-                    reactions: item.reactions.map(r => ({
-                        ...r.toPrimitives(),
-                        createdAt: r.toPrimitives().createdAt.toISOString(),
-                    })),
-                    childThreadCount: item.childThreadCount,
-                })),
-                total: result.total,
-            };
-
-            return {
-                statusCode: 200,
-                headers: corsHeaders,
-                body: JSON.stringify(responseBody),
-            };
-        }
+        const { threadId, ownerUserId, includeChildren, limit } = event.queryStringParameters || {};
 
         // 特定スレッド取得
         if (threadId) {
