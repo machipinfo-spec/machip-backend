@@ -1,4 +1,5 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ThreadRepository } from '../../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
 import { ThreadCreateUseCase } from '../../../../application/usecases/timeline/ThreadCreateUseCase';
 import { HandlerUtil } from '../../util';
@@ -11,6 +12,9 @@ const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
 
+const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'your-bucket-name';
+const s3 = new S3Client({ region: process.env.AWS_REGION || 'ap-northeast-1' });
+
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': '*',
@@ -21,6 +25,7 @@ const corsHeaders = {
 interface CreateThreadRequest {
     threadName: string;
     parentThreadId?: string;
+    imageBase64?: string;
 }
 
 interface CreateThreadResponse {
@@ -30,6 +35,7 @@ interface CreateThreadResponse {
     ownerUserId: string;
     parentThreadId: string | null;
     childThreadIds: string[];
+    imageUrl: string | null;
 }
 
 /**
@@ -68,7 +74,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const { threadName, parentThreadId } = requestBody;
+        const { threadName, parentThreadId, imageBase64 } = requestBody;
 
         if (!threadName || !userId) {
             return {
@@ -80,14 +86,40 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 }),
             };
         }
+        let imageBytes: Buffer | undefined;
+        if(imageBase64){
+            // ------------------------------------
+            // ★ Base64文字列 → バイナリへ変換
+            // ------------------------------------
+            try {
+                // 「data:image/png;base64,xxxxxxxx」の場合はプレフィックス除去
+                const base64Data = imageBase64.replace(/^data:.*;base64,/, '');
+                imageBytes = Buffer.from(base64Data, 'base64');
+            } catch (err) {
+                return {
+                    statusCode: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: 'Invalid Base64 image' }),
+                };
+            }
+        }
 
-        const thread = await useCase.execute(
+        const threadResponse = await useCase.execute(
             threadName,
             userId,
-            parentThreadId
+            parentThreadId,
+            undefined,
+            imageBytes
         );
+        if(threadResponse.error || !threadResponse.thread){
+            return {
+                statusCode: 500,
+                headers: corsHeaders,
+                body: JSON.stringify({ message: 'Failed to create thread', error: threadResponse.error }),
+            };
+        }
 
-        const threadDto = thread.toPrimitives();
+        const threadDto = threadResponse.thread.toPrimitives();
         const responseBody: CreateThreadResponse = {
             id: threadDto.id,
             threadName: threadDto.threadName,
@@ -95,6 +127,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             ownerUserId: threadDto.ownerUserId,
             parentThreadId: threadDto.parentThreadId,
             childThreadIds: threadDto.childThreadIds,
+            imageUrl: threadDto.imageUrl || null,
         };
 
         return {

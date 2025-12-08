@@ -21,6 +21,8 @@ export class GetPointInfoListUseCase {
             lng: point.getGeoLocation().getLng(),
             threadName: point.getThreadName().getValue(),
             category: point.getCategory().getValue(),
+            imageUrl: point.toPrimitives().imageUrl,
+            selectDate: point.toPrimitives().selectDate,
         }));
     }
 }
@@ -37,4 +39,6 @@ export interface GetPointInfoListUseCaseResponse {
     lng: number;
     threadName: string;
     category: string;
+    imageUrl: string | null;
+    selectDate: Date | null;
 }

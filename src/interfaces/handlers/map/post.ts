@@ -1,4 +1,5 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { MapRepository } from '../../../infrastructure/firebase/persistence/map/MapRepository';
 import { CreatePointInfoUseCase } from '../../../application/usecases/map/CreatePointInfoUseCase';
 import { ThreadRepository } from '../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
@@ -15,12 +16,24 @@ const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
 
+const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'your-bucket-name';
+const s3 = new S3Client({ region: process.env.AWS_REGION || 'ap-northeast-1' });
+
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': '*',
     'Access-Control-Allow-Methods': 'POST,OPTIONS',
     'Content-Type': 'application/json',
 };
+
+interface CreatePointInfoRequest {
+    lat: number;
+    lng: number;
+    threadName: string;
+    category: string;
+    imageBase64?: string;
+    selectedDate?: string;
+}
 
 interface CreatePointInfoResponse {
     id: string;
@@ -29,6 +42,7 @@ interface CreatePointInfoResponse {
     threadName: string;
     category: string;
     threadId: string;
+    imageUrl: string | null;
 }
 
 /**
@@ -39,6 +53,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         let authId = handlerUtil.getAuthId(event);
         const user = await getUserUseCase.execute(authId!);
 
+        if (!user) {
+            return {
+                statusCode: 403,
+                headers: corsHeaders,
+                body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
+            };
+        }
+
         if (!event.body) {
             return {
                 statusCode: 400,
@@ -47,7 +69,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        let requestBody;
+        let requestBody: CreatePointInfoRequest;
         try {
             requestBody = JSON.parse(event.body);
         } catch (parseError) {
@@ -58,7 +80,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const { lat, lng, threadName, category } = requestBody;
+        const { lat, lng, threadName, category, imageBase64, selectedDate } = requestBody;
 
         if (lat === undefined || lng === undefined || !threadName || !category) {
             return {
@@ -71,24 +93,66 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const point = await useCase.execute({
+        let imageBytes: Buffer | undefined;
+        if(imageBase64){
+            // ------------------------------------
+            // ★ Base64文字列 → バイナリへ変換
+            // ------------------------------------
+            try {
+                // 「data:image/png;base64,xxxxxxxx」の場合はプレフィックス除去
+                const base64Data = imageBase64.replace(/^data:.*;base64,/, '');
+                imageBytes = Buffer.from(base64Data, 'base64');
+            } catch (err) {
+                return {
+                    statusCode: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: 'Invalid Base64 image' }),
+                };
+            }
+        }
+
+        const pointCreateResponse = await useCase.execute({
             lat,
             lng,
             threadName,
             category,
+            selectDate: selectedDate ? new Date(selectedDate) : null,
+            imageBuffer: imageBytes || null,
         });
+        if(pointCreateResponse.error || !pointCreateResponse.pointInfo){
+            return {
+                statusCode: 500,
+                headers: corsHeaders,
+                body: JSON.stringify({ message: 'Failed to create point info', error: pointCreateResponse.error }),
+            };
+        }
+        const point = pointCreateResponse.pointInfo;
 
         // map上に関連したスレッドを立ち上げる
-        const thred = await threadCreateUseCase.execute(
+        const threadCreateResponse = await threadCreateUseCase.execute(
             threadName,
-            user!.userId.getValue(),
+            user.userId.getValue(),
             undefined,
-            point.id
+            point.getId().getValue(),
+            imageBytes
         );
-        const responseBody: CreatePointInfoResponse = {
-            ...point,
-            threadId: thred.toPrimitives().id,
+        if(threadCreateResponse.error || !threadCreateResponse.thread){
+            return {
+                statusCode: 500,
+                headers: corsHeaders,
+                body: JSON.stringify({ message: 'Failed to create thread for point info', error: threadCreateResponse.error }),
+            };
         }
+
+        const responseBody: CreatePointInfoResponse = {
+            id: point.getId().getValue(),
+            lat: point.getGeoLocation().getLat(),
+            lng: point.getGeoLocation().getLng(),
+            threadName: point.getThreadName().getValue(),
+            category: point.getCategory().getValue(),
+            threadId: threadCreateResponse.thread.toPrimitives().id,
+            imageUrl: threadCreateResponse.thread.toPrimitives().imageUrl || null,
+        };
 
         return {
             statusCode: 201,

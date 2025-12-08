@@ -17,6 +17,8 @@ export class MapRepository implements IMapRepository {
             lng: dto.lng,
             threadName: dto.threadName,
             category: dto.category,
+            selectDate: dto.selectDate,
+            imageUrl: dto.imageUrl || null
         };
 
         const { db } = await getDbAndAuth();
@@ -72,7 +74,9 @@ export class MapRepository implements IMapRepository {
             GeoLocation.fromCoordinates(data.lat, data.lng),
             ThreadName.create(data.threadName),
             Category.create(data.category),
-            data.isRead || false
+            data.isRead || false,
+            data.imageUrl || null,
+            data.selectDate ? new Date(data.selectDate) : null,
         );
     }
 

@@ -9,6 +9,9 @@ export class PointInfo {
         private readonly geoLocation: GeoLocation,
         private readonly threadName: ThreadName,
         private readonly category: Category,
+        private readonly imageUrl: string | null,
+        private readonly selectDate: Date | null,
+
     ) {
         Object.freeze(this);
     }
@@ -16,13 +19,18 @@ export class PointInfo {
     public static create(
         geoLocation: GeoLocation,
         threadName: ThreadName,
-        category: Category
+        category: Category,
+        imageUrl: string | null,
+        selectDate: Date | null,
+        pointInfoId?: PointInfoId,
     ): PointInfo {
         return new PointInfo(
-            PointInfoId.create(),
+            pointInfoId || PointInfoId.create(),
             geoLocation,
             threadName,
             category,
+            imageUrl,
+            selectDate
         );
     }
 
@@ -31,9 +39,11 @@ export class PointInfo {
         geoLocation: GeoLocation,
         threadName: ThreadName,
         category: Category,
-        isRead: boolean
+        isRead: boolean,
+        imageUrl: string | null,
+        selectDate: Date | null,
     ): PointInfo {
-        return new PointInfo(id, geoLocation, threadName, category);
+        return new PointInfo(id, geoLocation, threadName, category, imageUrl, selectDate);
     }
 
     public getId(): PointInfoId {
@@ -58,6 +68,8 @@ export class PointInfo {
             this.geoLocation,
             this.threadName,
             this.category,
+            this.imageUrl,
+            this.selectDate
         );
     }
 
@@ -68,6 +80,8 @@ export class PointInfo {
             lng: this.geoLocation.getLng(),
             threadName: this.threadName.getValue(),
             category: this.category.getValue(),
+            imageUrl: this.imageUrl,
+            selectDate: this.selectDate,
         };
     }
 }
@@ -78,4 +92,6 @@ export interface PointInfoDTO {
     id: string;
     threadName: string;
     category: string;
+    imageUrl: string | null
+    selectDate: Date | null;
 }
