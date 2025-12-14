@@ -47,9 +47,10 @@ export class Thread {
         mapPointInfoId: PointInfoId,
         selectDate: Date | null,
         imageUrl?: string | null,
+        threadId?: ThreadId,
     ): Thread {
         return new Thread(
-            ThreadId.create(),
+            threadId || ThreadId.create(),
             threadName,
             new Date(),
             null,

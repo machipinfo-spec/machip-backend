@@ -111,12 +111,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             }
         }
 
+        const selectDate = selectedDate ? new Date(selectedDate) : null;
         const pointCreateResponse = await useCase.execute({
             lat,
             lng,
             threadName,
             category,
-            selectDate: selectedDate ? new Date(selectedDate) : null,
+            selectDate: selectDate,
             imageBuffer: imageBytes || null,
         });
         if(pointCreateResponse.error || !pointCreateResponse.pointInfo){
@@ -132,9 +133,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const threadCreateResponse = await threadCreateUseCase.execute(
             threadName,
             user.userId.getValue(),
-            undefined,
+            null,
             point.getId().getValue(),
-            imageBytes
+            imageBytes || null,
+            selectDate
         );
         if(threadCreateResponse.error || !threadCreateResponse.thread){
             return {

@@ -5,6 +5,8 @@ import { UserId } from '../../../domain/value-object/users/UserId';
 import { ThreadId } from '../../../domain/value-object/timeline/threadId';
 import { PointInfoId } from '../../../domain/value-object/map/pointInfoId';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { Profile } from '../../../domain/entities/profile/profile';
+import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
 
 // ====== S3 クライアント ======
 const s3 = new S3Client({ region: process.env.AWS_REGION || "ap-northeast-1" });
@@ -15,13 +17,65 @@ const BUCKET_NAME =
         ? 'tetra-images-stg'
         : 'tetra-images-poc';
 
+export interface ThreadItem {
+    threadId: string;
+    threadName: string;
+    createdAt: Date;
+    ownerUserId: string;
+    ownerUserProfile: {
+        userId: string;
+        userName: string;
+        imageUrl: string;
+    };
+    parentThreadId: string | null;
+    childThreadIds: string[];
+    mapPointInfoId: string | null;
+    imageUrl: string | null;
+    selectDate: Date | null;
+    childThreadCount: number;
+}
+
 export interface ThreadCreateResponse {
-    thread: Thread | null;
+    thread: ThreadItem | null;
     error?: string;
 }
 
+
 export class ThreadCreateUseCase {
-    constructor(private threadRepository: IThreadRepository) {}
+    constructor(
+        private threadRepository: IThreadRepository,
+        private profileRepository: IProfileRepository
+    ) {}
+    private async convertToThreadItem(thread: Thread): Promise<ThreadItem> {
+        const p = thread.toPrimitives();
+
+        let ownerUserProfile: Profile | null = null;
+        try {
+            ownerUserProfile = await this.profileRepository.findByUserId(
+                UserId.fromExisting(p.ownerUserId)
+            );
+        } catch (e) {
+            console.error(`Failed to fetch profile for user ${p.ownerUserId}`, e);
+        }
+
+        return {
+            threadId: p.id,
+            threadName: p.threadName,
+            createdAt: p.createdAt,
+            ownerUserId: p.ownerUserId,
+            ownerUserProfile: {
+                userId: ownerUserProfile!.userId.getValue(),
+                userName: ownerUserProfile!.userName.getValue(),
+                imageUrl: ownerUserProfile!.imageUrl.getValue(),
+            },
+            parentThreadId: p.parentThreadId,
+            childThreadIds: p.childThreadIds,
+            mapPointInfoId: p.mapPointInfoId,
+            imageUrl: p.imageUrl,
+            selectDate: p.selectDate,
+            childThreadCount: p.childThreadIds.length
+        };
+    }
 
     async execute(
         threadName: string,
@@ -36,6 +90,7 @@ export class ThreadCreateUseCase {
             : undefined;
 
         const threadId = ThreadId.create();
+        console.log("Creating thread with ID:", threadId.getValue());
 
         let uploadedImageUrl = null;
         if(imageBytes){
@@ -69,7 +124,7 @@ export class ThreadCreateUseCase {
             thread = Thread.create(
                 ThreadName.create(threadName),
                 UserId.fromExisting(ownerUserId),
-                null,
+                selectDate,
                 parentThread,
                 uploadedImageUrl,
                 threadId
@@ -79,10 +134,14 @@ export class ThreadCreateUseCase {
                 ThreadName.create(threadName),
                 UserId.fromExisting(ownerUserId),
                 PointInfoId.fromExisting(pointInfoId),
-                null,
-                uploadedImageUrl
+                selectDate,
+                uploadedImageUrl,
+                // ThreadIdもPointInfoIdも存在する場合は既存のThreadIdを使う
+                ThreadId.fromExisting(pointInfoId),
             );
         }
+
+        console.log("Created thread:", thread.toPrimitives());
 
         await this.threadRepository.save(thread);
 
@@ -95,9 +154,10 @@ export class ThreadCreateUseCase {
                 await this.threadRepository.save(updatedParent);
             }
         }
+        const threadItem = await this.convertToThreadItem(thread);
 
         return {
-            thread,
+            thread: threadItem
         };
     }
 }

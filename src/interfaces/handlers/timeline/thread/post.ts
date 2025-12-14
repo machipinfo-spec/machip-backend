@@ -5,9 +5,11 @@ import { ThreadCreateUseCase } from '../../../../application/usecases/timeline/T
 import { HandlerUtil } from '../../util';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
 import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
+import { ProfileRepository } from '../../../../infrastructure/firebase/persistence/profile/ProfileRepository';
 
+const profileRepository = new ProfileRepository();
 const threadRepository = new ThreadRepository();
-const useCase = new ThreadCreateUseCase(threadRepository);
+const useCase = new ThreadCreateUseCase(threadRepository, profileRepository);
 const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
@@ -107,9 +109,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const threadResponse = await useCase.execute(
             threadName,
             userId,
-            parentThreadId,
-            undefined,
-            imageBytes
+            parentThreadId || null,
+            null,
+            imageBytes || null,
+            null
         );
         if(threadResponse.error || !threadResponse.thread){
             return {
@@ -119,21 +122,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const threadDto = threadResponse.thread.toPrimitives();
-        const responseBody: CreateThreadResponse = {
-            id: threadDto.id,
-            threadName: threadDto.threadName,
-            createdAt: threadDto.createdAt.toISOString(),
-            ownerUserId: threadDto.ownerUserId,
-            parentThreadId: threadDto.parentThreadId,
-            childThreadIds: threadDto.childThreadIds,
-            imageUrl: threadDto.imageUrl || null,
-        };
-
         return {
             statusCode: 201,
             headers: corsHeaders,
-            body: JSON.stringify(responseBody),
+            body: JSON.stringify(threadResponse.thread),
         };
     } catch (error: any) {
         console.error('Error in createThreadHandler:', error);

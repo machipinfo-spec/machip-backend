@@ -1,9 +1,15 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { MapRepository } from '../../../infrastructure/firebase/persistence/map/MapRepository';
 import { GetPointInfoListUseCase } from '../../../application/usecases/map/GetPointInfoListUseCase';
+import { HandlerUtil } from '../util';
+import { GetUserUseCase } from '../../../application/usecases/user/GetUserUseCase';
+import { UserRepository } from '../../../infrastructure/firebase/persistence/user/UserRepository';
 
 const mapRepository = new MapRepository();
 const useCase = new GetPointInfoListUseCase(mapRepository);
+const handlerUtil = new HandlerUtil();
+const userRepository = new UserRepository();
+const getUserUseCase = new GetUserUseCase(userRepository);
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -18,6 +24,8 @@ interface GetPointInfoListResponse {
     lng: number;
     threadName: string;
     category: string;
+    imageUrl: string | null;
+    selectDate: Date | null;
 }
 
 /**
@@ -25,6 +33,15 @@ interface GetPointInfoListResponse {
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
+        let authId = handlerUtil.getAuthId(event);
+        const user = await getUserUseCase.execute(authId!);
+        if(!user) {
+            return {
+                statusCode: 403,
+                headers: corsHeaders,
+                body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
+            };
+        }
         const { threadName, category, limit } = event.queryStringParameters || {};
 
         const points = await useCase.execute({

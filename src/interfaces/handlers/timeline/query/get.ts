@@ -1,16 +1,17 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { ThreadRepository } from '../../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
-import { ThreadReadUseCase } from '../../../../application/usecases/timeline/ThreadReadUseCase';
+import { TimelineReadUseCase } from '../../../../application/usecases/timeline/TimelineReadUseCase';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
+import { ProfileRepository } from '../../../../infrastructure/firebase/persistence/profile/ProfileRepository';
+import { ThreadRepository } from '../../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
 import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
 import { HandlerUtil } from '../../util';
-import { ProfileRepository } from '../../../../infrastructure/firebase/persistence/profile/ProfileRepository';
+import { ThreadQueryUseCase } from '../../../../application/usecases/timeline/ThreadQueryUseCase';
 
+const profileRepository = new ProfileRepository();
 const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const threadRepository = new ThreadRepository();
-const profileRepository = new ProfileRepository();
-const threadReadUseCase = new ThreadReadUseCase(threadRepository, profileRepository);
+const threadQueryUseCase = new ThreadQueryUseCase(threadRepository, profileRepository);
 const handlerUtil = new HandlerUtil();
 
 const corsHeaders = {
@@ -41,55 +42,40 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
             };
         }
-        const { threadId, ownerUserId, includeChildren, limit } = event.queryStringParameters || {};
+        const { startDate, endDate, limit } = event.queryStringParameters || {};
 
-        // 特定スレッド取得
-        if (threadId) {
-            const includeChildrenFlag = includeChildren !== 'false';
-            const result = await threadReadUseCase.execute(threadId, includeChildrenFlag);
+        // ------------------------------------------------------
+        // startDate / endDate が無ければ今日の範囲を自動設定
+        // ------------------------------------------------------
+        let start: Date;
+        let end: Date;
 
-            if (!result) {
-                return {
-                    statusCode: 404,
-                    headers: corsHeaders,
-                    body: JSON.stringify({ message: 'Thread not found' }),
-                };
-            }
+        if (!startDate && !endDate) {
+            const today = new Date();
 
-            return {
-                statusCode: 200,
-                headers: corsHeaders,
-                body: JSON.stringify(result),
-            };
+            // 今日の 00:00:00
+            start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+            // 今日の 23:59:59.999
+            end = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+        } else {
+            // 片方だけ指定されても OK（指定なければ new Date()）
+            start = startDate ? new Date(startDate) : new Date();
+            end = endDate ? new Date(endDate) : new Date();
         }
 
-        // ユーザーのスレッド一覧取得
-        if (ownerUserId) {
-            const threads = await threadRepository.findByOwnerUserId(
-                ownerUserId,
-                limit ? parseInt(limit, 10) : undefined
-            );
-
-            const responseBody = threads.map(thread => ({
-                ...thread.toPrimitives(),
-                createdAt: thread.toPrimitives().createdAt.toISOString(),
-            }));
-
-            return {
-                statusCode: 200,
-                headers: corsHeaders,
-                body: JSON.stringify(responseBody),
-            };
-        }
+        const result = await threadQueryUseCase.execute(
+            start,
+            end,
+            limit ? parseInt(limit, 10) : undefined
+        );
 
         return {
-            statusCode: 400,
+            statusCode: 200,
             headers: corsHeaders,
-            body: JSON.stringify({
-                message: 'Missing required query parameter',
-                required: 'threadId, ownerUserId, or timeline=true',
-            }),
+            body: JSON.stringify(result),
         };
+
     } catch (error: any) {
         console.error('Error in getThreadHandler:', error);
         return {

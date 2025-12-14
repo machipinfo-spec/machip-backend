@@ -1,21 +1,15 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { ThreadReadUseCase } from '../../../application/usecases/timeline/ThreadReadUseCase';
 import { TimelineReadUseCase } from '../../../application/usecases/timeline/TimelineReadUseCase';
 import { GetUserUseCase } from '../../../application/usecases/user/GetUserUseCase';
-import { ReactionRepository } from '../../../infrastructure/firebase/persistence/timeline/ReactionRepository';
 import { ThreadRepository } from '../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
 import { UserRepository } from '../../../infrastructure/firebase/persistence/user/UserRepository';
 import { HandlerUtil } from '../util';
-import { GetProfileUseCase } from '../../../application/usecases/profile/GetProfileUseCase';
 import { ProfileRepository } from '../../../infrastructure/firebase/persistence/profile/ProfileRepository';
 
 const profileRepository = new ProfileRepository();
-const getProfileUseCase = new GetProfileUseCase(profileRepository);
 const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const threadRepository = new ThreadRepository();
-const reactionRepository = new ReactionRepository();
-const threadReadUseCase = new ThreadReadUseCase(threadRepository, reactionRepository);
 const timelineReadUseCase = new TimelineReadUseCase(threadRepository, profileRepository);
 const handlerUtil = new HandlerUtil();
 
@@ -52,21 +46,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const result = await timelineReadUseCase.execute(
             limit ? parseInt(limit, 10) : undefined
         );
-
-        // const responseBody = {
-        //     threads: result.threads.map(item => ({
-        //         thread: {
-        //             ...item.thread.toPrimitives(),
-        //             createdAt: item.thread.toPrimitives().createdAt.toISOString(),
-        //         },
-        //         // reactions: item.reactions.map(r => ({
-        //         //     ...r.toPrimitives(),
-        //         //     createdAt: r.toPrimitives().createdAt.toISOString(),
-        //         // })),
-        //         childThreadCount: item.childThreadCount,
-        //     })),
-        //     total: result.total,
-        // };
 
         return {
             statusCode: 200,

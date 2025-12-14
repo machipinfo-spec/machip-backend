@@ -8,4 +8,5 @@ export interface IThreadRepository {
     findRootThreads(limit?: number): Promise<Thread[]>;
     delete(threadId: string): Promise<void>;
     softDelete(threadId: string): Promise<void>;
+    findBySelectDateRange(start: Date, end: Date, limit: number): Promise<Thread[]>;
 }

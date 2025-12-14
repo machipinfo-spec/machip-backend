@@ -76,7 +76,7 @@ export class MapRepository implements IMapRepository {
             Category.create(data.category),
             data.isRead || false,
             data.imageUrl || null,
-            data.selectDate ? new Date(data.selectDate) : null,
+            data.selectDate ? data.selectDate.toDate() : null,
         );
     }
 

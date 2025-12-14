@@ -17,6 +17,18 @@ Conditions:
   IsStg: !Equals [!Ref Stage, stg]
   IsPoc: !Equals [!Ref Stage, poc]
 
+# ============================
+#  追加：全 Lambda へ環境変数を付与
+# ============================
+Globals:
+  Function:
+    Environment:
+      Variables:
+        IS_STG: !If
+          - IsStg
+          - "true"
+          - "false"
+
 Resources:
   Tetra:
     Type: AWS::Serverless::Api
@@ -29,7 +41,7 @@ Resources:
       Auth:
         Authorizers:
           CognitoAuthorizer:
-            UserPoolArn: !Sub "arn:aws:cognito-idp:ap-northeast-1:338880795815:userpool/ap-northeast-1_APNLl7tTu"
+            UserPoolArn: !Sub "arn:aws:cognito-idp:ap-northeast-1:338880795815:userpool/ap-northeast-1_b6QnfWCPc"
             Identity:
               Header: Authorization
         DefaultAuthorizer: CognitoAuthorizer
@@ -152,6 +164,8 @@ Resources:
       Policies:
         - SSMParameterWithSlashPrefixReadPolicy:
             ParameterName: "/tetra/firebase/*"
+        - SSMParameterWithSlashPrefixReadPolicy:
+            ParameterName: "/tetra/google/*"
         - S3CrudPolicy:
             BucketName: !Ref ImageBucket
       Architectures:
@@ -266,47 +280,39 @@ Resources:
         EntryPoints:
           - index.ts
 
-  # reaction
-  # ReactionFunction:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     CodeUri: src/interfaces/handlers/timeline/reaction/
-  #     Handler: index.lambdaHandler
-  #     Runtime: nodejs22.x
-  #     Timeout: 30
-  #     MemorySize: 512
-  #     Policies:
-  #       - SSMParameterWithSlashPrefixReadPolicy:
-  #           ParameterName: "/tetra/firebase/*"
-  #       - S3CrudPolicy:
-  #           BucketName: !Ref ImageBucket
-  #     Architectures:
-  #       - x86_64
-  #     Events:
-  #       CreateReaction:
-  #         Type: Api
-  #         Properties:
-  #           RestApiId: !Ref Tetra
-  #           Path: /timeline/reaction
-  #           Method: POST
-  #           Auth:
-  #             Authorizer: CognitoAuthorizer
-  #       DeleteReaction:
-  #         Type: Api
-  #         Properties:
-  #           RestApiId: !Ref Tetra
-  #           Path: /timeline/reaction
-  #           Method: DELETE
-  #           Auth:
-  #             Authorizer: CognitoAuthorizer
-  #   Metadata:
-  #     BuildMethod: esbuild
-  #     BuildProperties:
-  #       Minify: true
-  #       Target: "es2020"
-  #       Sourcemap: true
-  #       EntryPoints:
-  #         - index.ts
+  # timelineQuery
+  TimelineQueryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/interfaces/handlers/timeline/query/
+      Handler: index.lambdaHandler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 512
+      Policies:
+        - SSMParameterWithSlashPrefixReadPolicy:
+            ParameterName: "/tetra/firebase/*"
+        - S3CrudPolicy:
+            BucketName: !Ref ImageBucket
+      Architectures:
+        - x86_64
+      Events:
+        GetThreadQuery:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Tetra
+            Path: /timeline/query
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints:
+          - index.ts
 
   # profile
   ProfileFunction:

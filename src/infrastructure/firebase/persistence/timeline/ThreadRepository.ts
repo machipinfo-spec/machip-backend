@@ -20,7 +20,8 @@ export class ThreadRepository implements IThreadRepository {
             parentThreadId: dto.parentThreadId,
             childThreadIds: dto.childThreadIds,
             mapPointInfoId: dto.mapPointInfoId,
-            imageUrl: dto.imageUrl || null
+            imageUrl: dto.imageUrl || null,
+            selectDate: dto.selectDate || null
         };
 
         const { db } = await getDbAndAuth();
@@ -117,5 +118,18 @@ export class ThreadRepository implements IThreadRepository {
             results.push(this.mapToThread(doc.id, data));
         });
         return results;
+    }
+    async findBySelectDateRange(start: Date, end: Date, limit = 100): Promise<Thread[]> {
+        const { db } = await getDbAndAuth();
+
+        const snapshot = await db
+            .collection(this.tableName)
+            .where("selectDate", ">=", start)
+            .where("selectDate", "<=", end)
+            .orderBy("selectDate", "asc")
+            .limit(limit)
+            .get();
+
+        return this.mapDocsToThreads(snapshot);
     }
 }
