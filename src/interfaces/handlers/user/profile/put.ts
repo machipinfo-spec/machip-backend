@@ -26,12 +26,14 @@ interface UpdateProfileResponse {
     userName: string;
     imageUrl: string;
     introduction: string;
+    url: string | null;
 }
 
 export interface UpdateProfileRequest {
     userName?: string;
     imageBytes?: Buffer;
     introduction?: string;
+    url: string | null;
 }
 
 /**
@@ -71,7 +73,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const { userName, imageBytes, introduction } = requestBody;
+        const { userName, imageBytes, introduction, url } = requestBody;
 
         // 少なくとも1つのフィールドが指定されているか確認
         if (userName === undefined && imageBytes === undefined && introduction === undefined) {
@@ -91,6 +93,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             userName,
             imageBytes,
             introduction,
+            url
         });
 
         if (response.error || !response.profile) {
@@ -110,6 +113,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             userName: response.profile.userName.getValue(),
             imageUrl: response.profile.imageUrl.getValue(),
             introduction: response.profile.introduction.getValue(),
+            url: response.profile.url.getValue(),
         };
 
         return {

@@ -20,6 +20,7 @@ export interface TimelineThreadItem {
     imageUrl: string | null;
     selectDate: Date | null;
     childThreadCount: number;
+    address: string | null;
 }
 
 export interface TimelineReadResult {
@@ -66,7 +67,8 @@ export class TimelineReadUseCase {
                     mapPointInfoId: primitives.mapPointInfoId,
                     imageUrl: primitives.imageUrl,
                     selectDate: primitives.selectDate,
-                    childThreadCount: primitives.childThreadIds.length
+                    childThreadCount: primitives.childThreadIds.length,
+                    address: primitives.address
                 };
             })
         );
@@ -119,7 +121,8 @@ export class TimelineReadByUserUseCase {
                 mapPointInfoId: primitives.mapPointInfoId,
                 imageUrl: primitives.imageUrl,
                 selectDate: primitives.selectDate,
-                childThreadCount: primitives.childThreadIds.length
+                childThreadCount: primitives.childThreadIds.length,
+                address: primitives.address
             };
         });
 

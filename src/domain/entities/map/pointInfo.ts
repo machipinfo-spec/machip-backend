@@ -11,6 +11,7 @@ export class PointInfo {
         private readonly category: Category,
         private readonly imageUrl: string | null,
         private readonly selectDate: Date | null,
+        private readonly address: string | null,
 
     ) {
         Object.freeze(this);
@@ -22,6 +23,7 @@ export class PointInfo {
         category: Category,
         imageUrl: string | null,
         selectDate: Date | null,
+        address: string | null,
         pointInfoId?: PointInfoId,
     ): PointInfo {
         return new PointInfo(
@@ -30,7 +32,8 @@ export class PointInfo {
             threadName,
             category,
             imageUrl,
-            selectDate
+            selectDate,
+            address
         );
     }
 
@@ -39,11 +42,11 @@ export class PointInfo {
         geoLocation: GeoLocation,
         threadName: ThreadName,
         category: Category,
-        isRead: boolean,
         imageUrl: string | null,
         selectDate: Date | null,
+        address: string | null,
     ): PointInfo {
-        return new PointInfo(id, geoLocation, threadName, category, imageUrl, selectDate);
+        return new PointInfo(id, geoLocation, threadName, category, imageUrl, selectDate, address);
     }
 
     public getId(): PointInfoId {
@@ -61,6 +64,9 @@ export class PointInfo {
     public getCategory(): Category {
         return this.category;
     }
+    public getAddress(): string | null {
+        return this.address;
+    }
 
     public markAsRead(): PointInfo {
         return new PointInfo(
@@ -69,7 +75,8 @@ export class PointInfo {
             this.threadName,
             this.category,
             this.imageUrl,
-            this.selectDate
+            this.selectDate,
+            this.address
         );
     }
 
@@ -82,6 +89,7 @@ export class PointInfo {
             category: this.category.getValue(),
             imageUrl: this.imageUrl,
             selectDate: this.selectDate,
+            address: this.address,
         };
     }
 }
@@ -92,6 +100,7 @@ export interface PointInfoDTO {
     id: string;
     threadName: string;
     category: string;
-    imageUrl: string | null
+    imageUrl: string | null;
     selectDate: Date | null;
+    address: string | null;
 }

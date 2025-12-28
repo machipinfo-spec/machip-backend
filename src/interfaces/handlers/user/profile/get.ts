@@ -25,6 +25,7 @@ interface GetProfileResponse {
     userName: string;
     imageUrl: string;
     introduction: string;
+    url: string | null;
 }
 
 /**
@@ -68,6 +69,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             userName: response.profile.userName.getValue(),
             imageUrl: response.profile.imageUrl.getValue(),
             introduction: response.profile.introduction.getValue(),
+            url: response.profile.url.getValue(),
         };
 
         return {

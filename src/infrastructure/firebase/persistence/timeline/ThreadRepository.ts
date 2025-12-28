@@ -21,7 +21,8 @@ export class ThreadRepository implements IThreadRepository {
             childThreadIds: dto.childThreadIds,
             mapPointInfoId: dto.mapPointInfoId,
             imageUrl: dto.imageUrl || null,
-            selectDate: dto.selectDate || null
+            selectDate: dto.selectDate || null,
+            address: dto.address || null,
         };
 
         const { db } = await getDbAndAuth();
@@ -94,7 +95,8 @@ export class ThreadRepository implements IThreadRepository {
             childThreadIds,
             data.mapPointInfoId ? PointInfoId.fromExisting(data.mapPointInfoId) : null,
             data.imageUrl || null,
-            data.selectDate ? (data.selectDate.toDate ? data.selectDate.toDate() : data.selectDate) : null
+            data.selectDate ? (data.selectDate.toDate ? data.selectDate.toDate() : data.selectDate) : null,
+            data.address || null
         );
     }
 

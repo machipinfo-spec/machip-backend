@@ -1,4 +1,5 @@
 import { PointInfo } from "../../../domain/entities/map/pointInfo";
+import { IReverseGeocodingRepository } from "../../../domain/repositories/location/IReverseGeocodingRepository";
 import { IMapRepository } from "../../../domain/repositories/map/IMapRepository";
 import { Category } from "../../../domain/value-object/map/category";
 import { GeoLocation } from "../../../domain/value-object/map/geoLocation";
@@ -16,7 +17,10 @@ const BUCKET_NAME =
         : 'tetra-images-poc';
 
 export class CreatePointInfoUseCase {
-    constructor(private readonly mapRepository: IMapRepository) {}
+    constructor(
+        private readonly mapRepository: IMapRepository,
+        private readonly reverseGeocodingRepository: IReverseGeocodingRepository
+    ) {}
 
     async execute(input: CreatePointInfoUseCaseRequest): Promise<CreatePointInfoUseCaseResponse> {
         const geoLocation = GeoLocation.create(input.lat, input.lng);
@@ -24,7 +28,21 @@ export class CreatePointInfoUseCase {
         const category = Category.create(input.category);
         const selectDate = input.selectDate ? new Date(input.selectDate) : null;
         const pointInfoId = PointInfoId.create();
-
+        // -------------------------
+        // 逆ジオコーディング
+        // -------------------------
+        let address: string | null = null;
+        try {
+        const addressResult =
+            await this.reverseGeocodingRepository.reverseGeocode(
+            input.lat,
+            input.lng
+            );
+        address = addressResult.formattedAddress;
+        } catch (err) {
+        console.warn('Reverse geocoding failed:', err);
+        // 住所取得失敗しても Point 作成は継続
+        }
         // -------------------------
         // S3 に画像アップロード
         // -------------------------
@@ -53,7 +71,8 @@ export class CreatePointInfoUseCase {
         const pointInfo = PointInfo.create(geoLocation, threadName, category,
             uploadedImageUrl || null,
             selectDate,
-            pointInfoId
+            address,
+            pointInfoId,
         );
 
         await this.mapRepository.save(pointInfo);

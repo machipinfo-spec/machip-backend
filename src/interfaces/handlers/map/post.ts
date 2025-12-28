@@ -7,11 +7,15 @@ import { ThreadCreateUseCase } from '../../../application/usecases/timeline/Thre
 import { GetUserUseCase } from '../../../application/usecases/user/GetUserUseCase';
 import { UserRepository } from '../../../infrastructure/firebase/persistence/user/UserRepository';
 import { HandlerUtil } from '../util';
+import { ReverseGeocodingRepository } from '../../../infrastructure/gcp/persistence/ReverseGeocodingRepository';
+import { ProfileRepository } from '../../../infrastructure/firebase/persistence/profile/ProfileRepository';
 
+const reverseGeocodingRepository = new ReverseGeocodingRepository();
 const mapRepository = new MapRepository();
-const useCase = new CreatePointInfoUseCase(mapRepository);
+const useCase = new CreatePointInfoUseCase(mapRepository, reverseGeocodingRepository);
 const threadRepository = new ThreadRepository();
-const threadCreateUseCase = new ThreadCreateUseCase(threadRepository);
+const profileRepository = new ProfileRepository();
+const threadCreateUseCase = new ThreadCreateUseCase(threadRepository, profileRepository);
 const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
@@ -136,7 +140,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             null,
             point.getId().getValue(),
             imageBytes || null,
-            selectDate
+            selectDate,
+            point.getAddress()
         );
         if(threadCreateResponse.error || !threadCreateResponse.thread){
             return {
@@ -152,8 +157,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             lng: point.getGeoLocation().getLng(),
             threadName: point.getThreadName().getValue(),
             category: point.getCategory().getValue(),
-            threadId: threadCreateResponse.thread.toPrimitives().id,
-            imageUrl: threadCreateResponse.thread.toPrimitives().imageUrl || null,
+            threadId: threadCreateResponse.thread.threadId,
+            imageUrl: threadCreateResponse.thread.imageUrl || null,
         };
 
         return {

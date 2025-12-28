@@ -112,6 +112,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             parentThreadId || null,
             null,
             imageBytes || null,
+            null,
             null
         );
         if(threadResponse.error || !threadResponse.thread){

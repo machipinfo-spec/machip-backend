@@ -8,6 +8,8 @@ import { IProfileRepository } from '../../../../domain/repositories/profile/IPro
 import { Profile } from '../../../../domain/entities/profile/profile';
 import { Introduction } from '../../../../domain/value-object/profile/Introduction';
 import { ProfileId } from '../../../../domain/value-object/profile/ProfileId';
+import { url } from 'inspector';
+import { ProfileUrl } from '../../../../domain/value-object/profile/ProfileUrl';
 
 export class ProfileRepository implements IProfileRepository {
     private readonly tableName = 'Profiles';
@@ -24,6 +26,7 @@ export class ProfileRepository implements IProfileRepository {
             introduction: profile.introduction.getValue(),
             createdAt: new Date(),
             updatedAt: new Date(),
+            url: profile.url.getValue(),
         };
 
         const { db } = await getDbAndAuth();
@@ -54,6 +57,7 @@ export class ProfileRepository implements IProfileRepository {
             imageUrl: profile.imageUrl.getValue(),
             introduction: profile.introduction.getValue(),
             updatedAt: new Date(),
+            url: profile.url.getValue(),
         };
 
         await db.collection(this.tableName).doc(docId).update(updateData);
@@ -129,7 +133,8 @@ export class ProfileRepository implements IProfileRepository {
             UserId.fromExisting(data.userId),
             UserName.create(data.userName),
             ImageUrl.create(data.imageUrl),
-            Introduction.create(data.introduction)
+            Introduction.create(data.introduction),
+            ProfileUrl.create(data.url)
         );
     }
 }

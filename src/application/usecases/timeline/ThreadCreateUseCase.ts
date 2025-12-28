@@ -33,6 +33,7 @@ export interface ThreadItem {
     imageUrl: string | null;
     selectDate: Date | null;
     childThreadCount: number;
+    address: string | null;
 }
 
 export interface ThreadCreateResponse {
@@ -73,7 +74,8 @@ export class ThreadCreateUseCase {
             mapPointInfoId: p.mapPointInfoId,
             imageUrl: p.imageUrl,
             selectDate: p.selectDate,
-            childThreadCount: p.childThreadIds.length
+            childThreadCount: p.childThreadIds.length,
+            address: p.address
         };
     }
 
@@ -83,11 +85,12 @@ export class ThreadCreateUseCase {
         parentThreadId: string | null,
         pointInfoId: string | null,
         imageBytes: Buffer | null,
-        selectDate: Date | null
+        selectDate: Date | null,
+        address: string | null,
     ): Promise<ThreadCreateResponse> {
         const parentThread = parentThreadId 
             ? ThreadId.fromExisting(parentThreadId)
-            : undefined;
+            : null;
 
         const threadId = ThreadId.create();
         console.log("Creating thread with ID:", threadId.getValue());
@@ -125,8 +128,9 @@ export class ThreadCreateUseCase {
                 ThreadName.create(threadName),
                 UserId.fromExisting(ownerUserId),
                 selectDate,
-                parentThread,
+                null,
                 uploadedImageUrl,
+                parentThread,
                 threadId
             );
         }else{
@@ -135,6 +139,7 @@ export class ThreadCreateUseCase {
                 UserId.fromExisting(ownerUserId),
                 PointInfoId.fromExisting(pointInfoId),
                 selectDate,
+                address,
                 uploadedImageUrl,
                 // ThreadIdもPointInfoIdも存在する場合は既存のThreadIdを使う
                 ThreadId.fromExisting(pointInfoId),

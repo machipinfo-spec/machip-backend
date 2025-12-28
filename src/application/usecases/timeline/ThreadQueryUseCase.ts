@@ -20,6 +20,7 @@ export interface ThreadItem {
     imageUrl: string | null;
     selectDate: Date | null;
     childThreadCount: number;
+    address: string | null;
 }
 
 export interface ThreadQueryResult {
@@ -59,7 +60,8 @@ export class ThreadQueryUseCase {
             mapPointInfoId: p.mapPointInfoId,
             imageUrl: p.imageUrl,
             selectDate: p.selectDate,
-            childThreadCount: p.childThreadIds.length
+            childThreadCount: p.childThreadIds.length,
+            address: p.address
         };
     }
 

@@ -15,6 +15,7 @@ export class Thread {
         private readonly mapPointInfoId: PointInfoId | null,
         private readonly imageUrl: string | null,
         private readonly selectDate: Date | null,
+        private readonly address: string | null,
     ) {
         Object.freeze(this);
     }
@@ -23,9 +24,10 @@ export class Thread {
         threadName: ThreadName,
         ownerUserId: UserId,
         selectDate: Date | null,
-        parentThreadId?: ThreadId,
-        imageUrl?: string | null,
-        threadId?: ThreadId,
+        address: string | null,
+        imageUrl: string | null,
+        parentThreadId: ThreadId | null,
+        threadId: ThreadId | null,
     ): Thread {
         return new Thread(
             threadId || ThreadId.create(),
@@ -33,11 +35,12 @@ export class Thread {
             new Date(),
             null,
             ownerUserId,
-            parentThreadId || null,
+            parentThreadId,
             [],
             null,
-            imageUrl || null,
-            selectDate
+            imageUrl,
+            selectDate,
+            address
         );
     }
 
@@ -46,8 +49,9 @@ export class Thread {
         ownerUserId: UserId,
         mapPointInfoId: PointInfoId,
         selectDate: Date | null,
-        imageUrl?: string | null,
-        threadId?: ThreadId,
+        address: string | null,
+        imageUrl: string | null,
+        threadId: ThreadId | null,
     ): Thread {
         return new Thread(
             threadId || ThreadId.create(),
@@ -58,8 +62,9 @@ export class Thread {
             null,
             [],
             mapPointInfoId,
-            imageUrl || null,
-            selectDate
+            imageUrl,
+            selectDate,
+            address
         );
     }
 
@@ -73,7 +78,8 @@ export class Thread {
         childThreadIds: ThreadId[],
         mapPointInfoId: PointInfoId | null,
         imageUrl: string | null = null,
-        selectDate: Date | null
+        selectDate: Date | null,
+        address: string | null,
     ): Thread {
         return new Thread(
             id,
@@ -85,7 +91,8 @@ export class Thread {
             childThreadIds,
             mapPointInfoId,
             imageUrl,
-            selectDate
+            selectDate,
+            address
         );
     }
 
@@ -108,7 +115,8 @@ export class Thread {
             [...this.childThreadIds, childThreadId],
             this.mapPointInfoId,
             this.imageUrl,
-            this.selectDate
+            this.selectDate,
+            this.address
         );
     }
 
@@ -127,7 +135,8 @@ export class Thread {
             filteredChildren,
             this.mapPointInfoId,
             this.imageUrl,
-            this.selectDate
+            this.selectDate,
+            this.address
         );
     }
 
@@ -163,6 +172,7 @@ export class Thread {
             mapPointInfoId: this.mapPointInfoId ? this.mapPointInfoId.getValue() : null,
             imageUrl: this.imageUrl,
             selectDate: this.selectDate,
+            address: this.address,
         };
     }
 }
@@ -178,4 +188,5 @@ export interface ThreadDTO {
     mapPointInfoId: string | null;
     imageUrl: string | null;
     selectDate: Date | null;
+    address: string | null;
 }

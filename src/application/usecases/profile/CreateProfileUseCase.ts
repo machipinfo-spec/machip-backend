@@ -3,12 +3,11 @@
 import { Profile } from '../../../domain/entities/profile/profile';
 import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
 import { Introduction } from '../../../domain/value-object/profile/Introduction';
+import { ProfileUrl } from '../../../domain/value-object/profile/ProfileUrl';
 import { ImageUrl } from '../../../domain/value-object/users/ImageUrl';
 import { UserId } from '../../../domain/value-object/users/UserId';
 import { UserName } from '../../../domain/value-object/users/UserName';
-
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { randomUUID } from 'crypto';
 
 // ====== 修正：imageBytes を受け取るリクエスト構造 ======
 export interface CreateProfileRequest {
@@ -16,6 +15,7 @@ export interface CreateProfileRequest {
     userName: string;
     imageBytes: Buffer;
     introduction: string;
+    url: string | null;
 }
 
 export interface CreateProfileResponse {
@@ -87,7 +87,8 @@ export class CreateProfileUseCase {
                     UserId.fromExisting(request.userId),
                     UserName.create(request.userName),
                     ImageUrl.create(uploadedImageUrl),
-                    Introduction.create(request.introduction)
+                    Introduction.create(request.introduction),
+                    ProfileUrl.create(request.url),
                 );
             } catch (validationError) {
                 return {

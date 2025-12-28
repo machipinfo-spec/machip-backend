@@ -26,12 +26,14 @@ interface CreateProfileResponse {
     userName: string;
     imageUrl: string;
     introduction: string;
+    url: string | null;
 }
 
 interface CreateProfileRequest {
     userName: string;
-    imageBase64: string;     // ★ 画像URL → Base64画像データ
+    imageBase64: string;
     introduction: string;
+    url: string | null;
 }
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -70,7 +72,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const { userName, imageBase64, introduction } = requestBody;
+        const { userName, imageBase64, introduction, url } = requestBody;
 
         // 必須チェック
         if (!userName || !imageBase64 || introduction === undefined) {
@@ -108,6 +110,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             userName,
             imageBytes,
             introduction,
+            url
         });
 
         if (response.error || !response.profile) {
@@ -126,6 +129,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             userName: response.profile.userName.getValue(),
             imageUrl: response.profile.imageUrl.getValue(), // UseCase側でアップロードしたURLが返る
             introduction: response.profile.introduction.getValue(),
+            url: response.profile.url.getValue(),
         };
 
         return {

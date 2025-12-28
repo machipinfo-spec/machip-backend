@@ -5,6 +5,7 @@ import { ImageUrl } from "../../value-object/users/ImageUrl";
 import { UserId } from "../../value-object/users/UserId";
 import { Introduction } from "../../value-object/profile/Introduction";
 import { ProfileId } from "../../value-object/profile/ProfileId";
+import { ProfileUrl } from "../../value-object/profile/ProfileUrl";
 
 // DTOインターフェース
 export interface ProfileDTO {
@@ -13,6 +14,7 @@ export interface ProfileDTO {
     userName: string;
     imageUrl: string;
     introduction: string;
+    url: string | null;
 }
 
 export class Profile {
@@ -21,6 +23,7 @@ export class Profile {
     private _userName: UserName;
     private _imageUrl: ImageUrl;
     private _introduction: Introduction;
+    private _url: ProfileUrl;
 
     // 直接のインスタンス化を制限
     private constructor(
@@ -28,13 +31,15 @@ export class Profile {
         userId: UserId,
         userName: UserName,
         imageUrl: ImageUrl,
-        introduction: Introduction
+        introduction: Introduction,
+        url: ProfileUrl
     ) {
         this._profileId = profileId;
         this._userId = userId;
         this._userName = userName;
         this._imageUrl = imageUrl;
         this._introduction = introduction;
+        this._url = url;
 
         // 集約全体の整合性チェック
         this.validateState();
@@ -51,10 +56,11 @@ export class Profile {
         userId: UserId,
         userName: UserName,
         imageUrl: ImageUrl,
-        introduction: Introduction
+        introduction: Introduction,
+        url: ProfileUrl
     ): Profile {
         const profileId = ProfileId.create(); // 新しいUUIDを生成
-        return new Profile(profileId, userId, userName, imageUrl, introduction);
+        return new Profile(profileId, userId, userName, imageUrl, introduction, url);
     }
 
     // ファクトリメソッド - 既存プロフィール再構築（リポジトリから取得する場合など）
@@ -63,9 +69,10 @@ export class Profile {
         userId: UserId,
         userName: UserName,
         imageUrl: ImageUrl,
-        introduction: Introduction
+        introduction: Introduction,
+        url: ProfileUrl
     ): Profile {
-        return new Profile(profileId, userId, userName, imageUrl, introduction);
+        return new Profile(profileId, userId, userName, imageUrl, introduction, url);
     }
 
     // DTOからのインスタンス作成（リポジトリから取得時など）
@@ -75,7 +82,8 @@ export class Profile {
             UserId.fromExisting(dto.userId),
             UserName.create(dto.userName),
             ImageUrl.create(dto.imageUrl),
-            Introduction.create(dto.introduction)
+            Introduction.create(dto.introduction),
+            ProfileUrl.create(dto.url || "")
         );
     }
 
@@ -87,6 +95,7 @@ export class Profile {
             userName: this._userName.getValue(),
             imageUrl: this._imageUrl.getValue(),
             introduction: this._introduction.getValue(),
+            url: this._url.getValue(),
         };
     }
 
@@ -111,6 +120,10 @@ export class Profile {
         return this._introduction;
     }
 
+    public get url(): ProfileUrl {
+        return this._url;
+    }
+
     // 状態変更メソッド（不変性を保ったイミュータブルな更新）
     public updateUserName(newUserName: UserName): Profile {
         return Profile.reconstitute(
@@ -118,7 +131,8 @@ export class Profile {
             this._userId,
             newUserName,
             this._imageUrl,
-            this._introduction
+            this._introduction,
+            this._url
         );
     }
 
@@ -128,7 +142,8 @@ export class Profile {
             this._userId,
             this._userName,
             newImageUrl,
-            this._introduction
+            this._introduction,
+            this._url
         );
     }
 
@@ -138,21 +153,24 @@ export class Profile {
             this._userId,
             this._userName,
             this._imageUrl,
-            newIntroduction
+            newIntroduction,
+            this._url
         );
     }
 
     public updateProfile(
         newUserName: UserName,
         newImageUrl: ImageUrl,
-        newIntroduction: Introduction
+        newIntroduction: Introduction,
+        newUrl: ProfileUrl
     ): Profile {
         return Profile.reconstitute(
             this._profileId,
             this._userId,
             newUserName,
             newImageUrl,
-            newIntroduction
+            newIntroduction,
+            newUrl
         );
     }
 
