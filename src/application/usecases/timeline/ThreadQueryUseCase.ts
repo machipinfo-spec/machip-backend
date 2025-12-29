@@ -10,9 +10,9 @@ export interface ThreadItem {
     createdAt: Date;
     ownerUserId: string;
     ownerUserProfile: {
-        userId: string;
-        userName: string;
-        imageUrl: string;
+        userId: string | null;
+        userName: string | null;
+        imageUrl: string | null;
     };
     parentThreadId: string | null;
     childThreadIds: string[];
@@ -28,19 +28,14 @@ export interface ThreadQueryResult {
 }
 
 export class ThreadQueryUseCase {
-    constructor(
-        private threadRepository: IThreadRepository,
-        private profileRepository: IProfileRepository
-    ) {}
+    constructor(private threadRepository: IThreadRepository, private profileRepository: IProfileRepository) {}
 
     private async convertToThreadItem(thread: Thread): Promise<ThreadItem> {
         const p = thread.toPrimitives();
 
         let ownerUserProfile: Profile | null = null;
         try {
-            ownerUserProfile = await this.profileRepository.findByUserId(
-                UserId.fromExisting(p.ownerUserId)
-            );
+            ownerUserProfile = await this.profileRepository.findByUserId(UserId.fromExisting(p.ownerUserId));
         } catch (e) {
             console.error(`Failed to fetch profile for user ${p.ownerUserId}`, e);
         }
@@ -51,9 +46,9 @@ export class ThreadQueryUseCase {
             createdAt: p.createdAt,
             ownerUserId: p.ownerUserId,
             ownerUserProfile: {
-                userId: ownerUserProfile!.userId.getValue(),
-                userName: ownerUserProfile!.userName.getValue(),
-                imageUrl: ownerUserProfile!.imageUrl.getValue(),
+                userId: ownerUserProfile?.userId.getValue() || null,
+                userName: ownerUserProfile?.userName.getValue() || null,
+                imageUrl: ownerUserProfile?.imageUrl.getValue() || null,
             },
             parentThreadId: p.parentThreadId,
             childThreadIds: p.childThreadIds,
@@ -61,7 +56,7 @@ export class ThreadQueryUseCase {
             imageUrl: p.imageUrl,
             selectDate: p.selectDate,
             childThreadCount: p.childThreadIds.length,
-            address: p.address
+            address: p.address,
         };
     }
 
@@ -71,11 +66,11 @@ export class ThreadQueryUseCase {
 
         // mapToThreadItem の並列処理
         const threadItems: ThreadItem[] = await Promise.all(
-            threads.map(async (t) => await this.convertToThreadItem(t))
+            threads.map(async (t) => await this.convertToThreadItem(t)),
         );
 
         return {
-            threads: threadItems
+            threads: threadItems,
         };
     }
 }

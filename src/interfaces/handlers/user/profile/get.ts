@@ -35,23 +35,39 @@ interface GetProfileResponse {
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         let authId = await handlerUtil.getAuthId(event);
-        const user = await getUserUseCase.execute(authId!);
 
-        if (!user) {
-            return {
-                statusCode: 403,
-                headers: corsHeaders,
-                body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
-            };
+        let user = null;
+        if (authId) {
+            user = await getUserUseCase.execute(authId);
+            if (!user) {
+                return {
+                    statusCode: 403,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
+                };
+            }
         }
+
         const requestUserId = event.pathParameters?.userId;
         console.log('Requested userId:', requestUserId);
+        console.log('Auth ID:', authId);
+
+        // ゲストの場合、@selfは許可しない（認証が必要）
+        if (!authId && requestUserId === '@self') {
+            return {
+                statusCode: 401,
+                headers: corsHeaders,
+                body: JSON.stringify({ message: 'Unauthorized: Authentication required for @self' }),
+            };
+        }
+
         let userId;
         if (requestUserId === '@self') {
-            userId = user.userId.getValue();
+            userId = user!.userId.getValue();
         } else {
             userId = requestUserId!;
         }
+        console.log('User ID:', userId);
         const response = await getProfileUseCase.execute({ userId });
 
         if (!response.profile) {

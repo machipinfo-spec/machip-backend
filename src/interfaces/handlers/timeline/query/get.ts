@@ -33,14 +33,15 @@ const corsHeaders = {
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         let authId = await handlerUtil.getAuthId(event);
-        const user = await getUserUseCase.execute(authId!);
-
-        if (!user) {
-            return {
-                statusCode: 403,
-                headers: corsHeaders,
-                body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
-            };
+        if (authId) {
+            const user = await getUserUseCase.execute(authId);
+            if (!user) {
+                return {
+                    statusCode: 403,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
+                };
+            }
         }
         const { startDate, endDate, limit } = event.queryStringParameters || {};
 

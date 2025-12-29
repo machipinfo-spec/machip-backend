@@ -10,9 +10,9 @@ export interface ThreadItem {
     createdAt: Date;
     ownerUserId: string;
     ownerUserProfile: {
-        userId: string;
-        userName: string;
-        imageUrl: string;
+        userId: string | null;
+        userName: string | null;
+        imageUrl: string | null;
     };
     parentThreadId: string | null;
     childThreadIds: string[];
@@ -30,19 +30,14 @@ export interface ThreadReadResult {
 }
 
 export class ThreadReadUseCase {
-    constructor(
-        private threadRepository: IThreadRepository,
-        private profileRepository: IProfileRepository
-    ) {}
+    constructor(private threadRepository: IThreadRepository, private profileRepository: IProfileRepository) {}
 
     private async convertToThreadItem(thread: Thread): Promise<ThreadItem> {
         const p = thread.toPrimitives();
 
         let ownerUserProfile: Profile | null = null;
         try {
-            ownerUserProfile = await this.profileRepository.findByUserId(
-                UserId.fromExisting(p.ownerUserId)
-            );
+            ownerUserProfile = await this.profileRepository.findByUserId(UserId.fromExisting(p.ownerUserId));
         } catch (e) {
             console.error(`Failed to fetch profile for user ${p.ownerUserId}`, e);
         }
@@ -53,9 +48,9 @@ export class ThreadReadUseCase {
             createdAt: p.createdAt,
             ownerUserId: p.ownerUserId,
             ownerUserProfile: {
-                userId: ownerUserProfile!.userId.getValue(),
-                userName: ownerUserProfile!.userName.getValue(),
-                imageUrl: ownerUserProfile!.imageUrl.getValue(),
+                userId: ownerUserProfile?.userId.getValue() || null,
+                userName: ownerUserProfile?.userName.getValue() || null,
+                imageUrl: ownerUserProfile?.imageUrl.getValue() || null,
             },
             parentThreadId: p.parentThreadId,
             childThreadIds: p.childThreadIds,
@@ -63,7 +58,7 @@ export class ThreadReadUseCase {
             imageUrl: p.imageUrl,
             selectDate: p.selectDate,
             childThreadCount: p.childThreadIds.length,
-            address: p.address
+            address: p.address,
         };
     }
 
@@ -74,26 +69,22 @@ export class ThreadReadUseCase {
         const primitives = thread.toPrimitives();
 
         const [childThreads, parentThread] = await Promise.all([
-            includeChildren
-                ? this.threadRepository.findByParentThreadId(threadId)
-                : Promise.resolve([]),
+            includeChildren ? this.threadRepository.findByParentThreadId(threadId) : Promise.resolve([]),
             primitives.parentThreadId
                 ? this.threadRepository.findById(primitives.parentThreadId)
-                : Promise.resolve(null)
+                : Promise.resolve(null),
         ]);
 
         const threadItem = await this.convertToThreadItem(thread);
 
         const childThreadResults = includeChildren
-            ? await Promise.all(
-                childThreads.map(async (ct) => this.execute(ct.toPrimitives().id, true))
-            )
+            ? await Promise.all(childThreads.map(async (ct) => this.execute(ct.toPrimitives().id, true)))
             : [];
 
         return {
             thread: threadItem,
             childThreads: childThreadResults.filter((x): x is ThreadReadResult => x !== null),
-            parentThread: parentThread ? await this.convertToThreadItem(parentThread) : null
+            parentThread: parentThread ? await this.convertToThreadItem(parentThread) : null,
         };
     }
 
@@ -107,7 +98,7 @@ export class ThreadReadUseCase {
             this.threadRepository.findByParentThreadId(threadId),
             primitives.parentThreadId
                 ? this.threadRepository.findById(primitives.parentThreadId)
-                : Promise.resolve(null)
+                : Promise.resolve(null),
         ]);
 
         const threadItem = await this.convertToThreadItem(thread);
@@ -116,14 +107,14 @@ export class ThreadReadUseCase {
             childThreads.map(async (child) => ({
                 thread: await this.convertToThreadItem(child),
                 childThreads: [],
-                parentThread: threadItem
-            }))
+                parentThread: threadItem,
+            })),
         );
 
         return {
             thread: threadItem,
             childThreads: childThreadResults,
-            parentThread: parentThread ? await this.convertToThreadItem(parentThread) : null
+            parentThread: parentThread ? await this.convertToThreadItem(parentThread) : null,
         };
     }
 }

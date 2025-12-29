@@ -178,7 +178,10 @@ Resources:
                     Properties:
                         RestApiId: !Ref Tetra
                         Path: /map
+                        Path: /map
                         Method: GET
+                        Auth:
+                            Authorizer: NONE
                 CreatePointInfo:
                     Type: Api
                     Properties:
@@ -219,6 +222,8 @@ Resources:
                         RestApiId: !Ref Tetra
                         Path: /timeline
                         Method: GET
+                        Auth:
+                            Authorizer: NONE
         Metadata:
             BuildMethod: esbuild
             BuildProperties:
@@ -251,6 +256,8 @@ Resources:
                         RestApiId: !Ref Tetra
                         Path: /timeline/thread
                         Method: GET
+                        Auth:
+                            Authorizer: NONE
                 CreateThread:
                     Type: Api
                     Properties:
@@ -300,7 +307,7 @@ Resources:
                         Path: /timeline/query
                         Method: GET
                         Auth:
-                            Authorizer: CognitoAuthorizer
+                            Authorizer: NONE
         Metadata:
             BuildMethod: esbuild
             BuildProperties:
@@ -350,7 +357,7 @@ Resources:
                         Path: /user/profile/{userId}
                         Method: GET
                         Auth:
-                            Authorizer: CognitoAuthorizer
+                            Authorizer: NONE
         Metadata:
             BuildMethod: esbuild
             BuildProperties:
