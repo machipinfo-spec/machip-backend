@@ -112,7 +112,6 @@ export class ProfileRepository implements IProfileRepository {
         }
 
         const doc = querySnapshot.docs[0].data();
-        console.log('Document data:', doc);
         return this.mapToProfile(doc);
     }
 
@@ -120,7 +119,6 @@ export class ProfileRepository implements IProfileRepository {
      * FirestoreのドキュメントデータをProfileエンティティにマッピングする
      */
     private mapToProfile(data: any): Profile {
-        console.log('Document data:', data);
         return Profile.reconstitute(
             ProfileId.fromExisting(data.profileId),
             UserId.fromExisting(data.userId),

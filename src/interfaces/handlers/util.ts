@@ -34,7 +34,6 @@ export class HandlerUtil {
     async extractAuthIdFromToken(event: APIGatewayProxyEvent): Promise<string | null> {
         try {
             const authHeader = event.headers?.Authorization || event.headers?.authorization;
-            console.log('authHeader', authHeader);
             if (!authHeader) {
                 return null;
             }

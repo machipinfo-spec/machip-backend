@@ -9,13 +9,10 @@ import { Profile } from '../../../domain/entities/profile/profile';
 import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
 
 // ====== S3 クライアント ======
-const s3 = new S3Client({ region: process.env.AWS_REGION || "ap-northeast-1" });
+const s3 = new S3Client({ region: process.env.AWS_REGION || 'ap-northeast-1' });
 
 // S3 バケット名（CloudFormation と合わせる）
-const BUCKET_NAME =
-    process.env.IS_STG === 'true'
-        ? 'tetra-images-stg'
-        : 'tetra-images-poc';
+const BUCKET_NAME = process.env.IS_STG === 'true' ? 'tetra-images-stg' : 'tetra-images-poc';
 
 export interface ThreadItem {
     threadId: string;
@@ -41,20 +38,14 @@ export interface ThreadCreateResponse {
     error?: string;
 }
 
-
 export class ThreadCreateUseCase {
-    constructor(
-        private threadRepository: IThreadRepository,
-        private profileRepository: IProfileRepository
-    ) {}
+    constructor(private threadRepository: IThreadRepository, private profileRepository: IProfileRepository) {}
     private async convertToThreadItem(thread: Thread): Promise<ThreadItem> {
         const p = thread.toPrimitives();
 
         let ownerUserProfile: Profile | null = null;
         try {
-            ownerUserProfile = await this.profileRepository.findByUserId(
-                UserId.fromExisting(p.ownerUserId)
-            );
+            ownerUserProfile = await this.profileRepository.findByUserId(UserId.fromExisting(p.ownerUserId));
         } catch (e) {
             console.error(`Failed to fetch profile for user ${p.ownerUserId}`, e);
         }
@@ -75,7 +66,7 @@ export class ThreadCreateUseCase {
             imageUrl: p.imageUrl,
             selectDate: p.selectDate,
             childThreadCount: p.childThreadIds.length,
-            address: p.address
+            address: p.address,
         };
     }
 
@@ -88,15 +79,11 @@ export class ThreadCreateUseCase {
         selectDate: Date | null,
         address: string | null,
     ): Promise<ThreadCreateResponse> {
-        const parentThread = parentThreadId 
-            ? ThreadId.fromExisting(parentThreadId)
-            : null;
+        const parentThread = parentThreadId ? ThreadId.fromExisting(parentThreadId) : null;
 
         const threadId = ThreadId.create();
-        console.log("Creating thread with ID:", threadId.getValue());
-
         let uploadedImageUrl = null;
-        if(imageBytes){
+        if (imageBytes) {
             // -------------------------
             // S3 に画像アップロード
             // -------------------------
@@ -123,7 +110,7 @@ export class ThreadCreateUseCase {
         }
 
         let thread;
-        if(!pointInfoId){
+        if (!pointInfoId) {
             thread = Thread.create(
                 ThreadName.create(threadName),
                 UserId.fromExisting(ownerUserId),
@@ -131,9 +118,9 @@ export class ThreadCreateUseCase {
                 null,
                 uploadedImageUrl,
                 parentThread,
-                threadId
+                threadId,
             );
-        }else{
+        } else {
             thread = Thread.createFromMapPoint(
                 ThreadName.create(threadName),
                 UserId.fromExisting(ownerUserId),
@@ -145,9 +132,6 @@ export class ThreadCreateUseCase {
                 ThreadId.fromExisting(pointInfoId),
             );
         }
-
-        console.log("Created thread:", thread.toPrimitives());
-
         await this.threadRepository.save(thread);
 
         // 親スレッドが存在する場合、親スレッドの子リストに追加
@@ -162,7 +146,7 @@ export class ThreadCreateUseCase {
         const threadItem = await this.convertToThreadItem(thread);
 
         return {
-            thread: threadItem
+            thread: threadItem,
         };
     }
 }

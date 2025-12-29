@@ -49,8 +49,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         const requestUserId = event.pathParameters?.userId;
-        console.log('Requested userId:', requestUserId);
-        console.log('Auth ID:', authId);
 
         // ゲストの場合、@selfは許可しない（認証が必要）
         if (!authId && requestUserId === '@self') {
@@ -67,7 +65,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         } else {
             userId = requestUserId!;
         }
-        console.log('User ID:', userId);
         const response = await getProfileUseCase.execute({ userId });
 
         if (!response.profile) {

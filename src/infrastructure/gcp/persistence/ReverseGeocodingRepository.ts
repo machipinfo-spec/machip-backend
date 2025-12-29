@@ -8,86 +8,76 @@ import { ParameterStoreManager } from '../../utils/parameterStoreManager';
 const region = process.env.AWS_REGION || 'ap-northeast-1';
 const parameterManager = new ParameterStoreManager(region);
 
-export class ReverseGeocodingRepository
-  implements IReverseGeocodingRepository
-{
-  private authClient: GoogleAuth | undefined;
+export class ReverseGeocodingRepository implements IReverseGeocodingRepository {
+    private authClient: GoogleAuth | undefined;
 
-  constructor() {
-    // 同期コンストラクタ
-  }
-  private async getApiKey(): Promise<string> {
-    const apiKey = await parameterManager.getParameter(
-      '/tetra/google/maps/api-key'
-    );
+    constructor() {
+        // 同期コンストラクタ
+    }
+    private async getApiKey(): Promise<string> {
+        const apiKey = await parameterManager.getParameter('/tetra/google/maps/api-key');
 
-    if (!apiKey) {
-      throw new Error('Google Maps API key not set');
+        if (!apiKey) {
+            throw new Error('Google Maps API key not set');
+        }
+
+        return apiKey;
     }
 
-    return apiKey;
-  }
+    // private async getGoogleCredentials() {
+    //   const googleCredentialsJson =
+    //     await parameterManager.getParameter('/tetra/google/credential');
 
+    //   if (!googleCredentialsJson) {
+    //     throw new Error('Google credentials not set');
+    //   }
 
-  // private async getGoogleCredentials() {
-  //   const googleCredentialsJson =
-  //     await parameterManager.getParameter('/tetra/google/credential');
+    //   return JSON.parse(googleCredentialsJson);
+    // }
 
-  //   if (!googleCredentialsJson) {
-  //     throw new Error('Google credentials not set');
-  //   }
+    // private async initialize() {
+    //   if (this.authClient) return;
 
-  //   return JSON.parse(googleCredentialsJson);
-  // }
+    //   const credentials = await this.getGoogleCredentials();
+    //   this.authClient = new GoogleAuth({
+    //     credentials,
+    //     scopes: ['https://www.googleapis.com/auth/maps-platform'],
+    //   });
+    // }
 
-  // private async initialize() {
-  //   if (this.authClient) return;
+    async reverseGeocode(lat: number, lng: number): Promise<AddressResult> {
+        const apiKey = await this.getApiKey();
 
-  //   const credentials = await this.getGoogleCredentials();
-  //   this.authClient = new GoogleAuth({
-  //     credentials,
-  //     scopes: ['https://www.googleapis.com/auth/maps-platform'],
-  //   });
-  // }
+        const url =
+            `https://maps.googleapis.com/maps/api/geocode/json` + `?latlng=${lat},${lng}&language=ja&key=${apiKey}`;
 
-  async reverseGeocode(lat: number, lng: number): Promise<AddressResult> {
-    const apiKey = await this.getApiKey();
+        const response = await fetch(url);
 
-    const url =
-      `https://maps.googleapis.com/maps/api/geocode/json` +
-      `?latlng=${lat},${lng}&language=ja&key=${apiKey}`;
+        if (!response.ok) {
+            throw new Error(`Google Geocoding API error: ${response.status}`);
+        }
 
-    const response = await fetch(url);
+        const json = await response.json();
 
-    if (!response.ok) {
-      throw new Error(`Google Geocoding API error: ${response.status}`);
+        if (!json.results || json.results.length === 0) {
+            throw new Error('No address found for given coordinates');
+        }
+
+        const result = json.results[0];
+        const components = result.address_components as Array<{
+            long_name: string;
+            types: string[];
+        }>;
+
+        const find = (type: string) => components.find((c) => c.types.includes(type))?.long_name;
+        return new AddressResult(
+            result.formatted_address,
+            find('country'),
+            find('administrative_area_level_1'), // 都道府県
+            find('locality'), // 市
+            find('sublocality_level_1'), // 区
+            find('route'), // 通り
+            find('postal_code'),
+        );
     }
-
-    const json = await response.json();
-
-    if (!json.results || json.results.length === 0) {
-      throw new Error('No address found for given coordinates');
-    }
-
-    const result = json.results[0];
-    const components = result.address_components as Array<{
-      long_name: string;
-      types: string[];
-    }>;
-
-    const find = (type: string) =>
-      components.find(c => c.types.includes(type))?.long_name;
-
-    console.log('Reverse geocoding result:', result);
-
-    return new AddressResult(
-      result.formatted_address,
-      find('country'),
-      find('administrative_area_level_1'), // 都道府県
-      find('locality'),                    // 市
-      find('sublocality_level_1'),          // 区
-      find('route'),                        // 通り
-      find('postal_code'),
-    );
-  }
 }

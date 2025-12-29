@@ -36,7 +36,6 @@ export class UpdateProfileUseCase {
     constructor(private readonly profileRepository: IProfileRepository) {}
 
     async execute(request: UpdateProfileRequest): Promise<UpdateProfileResponse> {
-        console.log('UpdateProfileUseCase execute', request);
         try {
             const profile = await this.profileRepository.findByUserId(UserId.fromExisting(request.userId));
             if (!profile) {
@@ -70,7 +69,6 @@ export class UpdateProfileUseCase {
                             CacheControl: 'public, max-age=31536000',
                         }),
                     );
-                    console.log('S3 upload success:', imageKey);
 
                     // ✅ 古い画像を削除（存在する場合のみ）
                     const oldImageUrl = profile.imageUrl.getValue();
@@ -133,8 +131,6 @@ export class UpdateProfileUseCase {
                     Key: oldKey,
                 }),
             );
-
-            console.log('Deleted old profile image:', oldKey);
         } catch (err) {
             // 削除失敗はログだけ残して続行（画像が既に削除されている可能性もある）
             console.warn('Failed to delete old profile image:', err);

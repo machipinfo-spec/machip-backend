@@ -53,7 +53,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         });
 
         const responseBody: GetPointInfoListResponse[] = points;
-        console.log('GetPointInfoListResponse:', responseBody);
 
         return {
             statusCode: 200,

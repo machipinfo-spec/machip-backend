@@ -25,7 +25,6 @@ export class GetProfileUseCase {
                     error: 'User ID is required',
                 };
             }
-            console.log('GetUserProfileUseCase:', request.userId);
             // リポジトリからプロフィールを取得
             const profile = await this.profileRepository.findByUserId(UserId.fromExisting(request.userId));
 
