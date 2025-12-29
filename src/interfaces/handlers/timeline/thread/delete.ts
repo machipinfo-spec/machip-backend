@@ -36,17 +36,17 @@ interface DeleteThreadResponse {
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        let authId = handlerUtil.getAuthId(event);
+        let authId = await handlerUtil.getAuthId(event);
         const user = await getUserUseCase.execute(authId!);
 
-        if(!user) {
+        if (!user) {
             return {
                 statusCode: 403,
                 headers: corsHeaders,
                 body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
             };
         }
-        
+
         const { threadId, deleteChildren, soft } = event.queryStringParameters || {};
 
         if (!threadId) {
@@ -62,7 +62,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // 論理削除の場合
         if (soft === 'true') {
             await useCase.executeSoftDelete(threadId);
-            
+
             const responseBody: DeleteThreadResponse = {
                 success: true,
                 deletedThreadIds: [threadId],
@@ -93,7 +93,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         };
     } catch (error: any) {
         console.error('Error in deleteThreadHandler:', error);
-        
+
         // Thread not found エラーの場合は404を返す
         if (error.message && error.message.includes('not found')) {
             return {

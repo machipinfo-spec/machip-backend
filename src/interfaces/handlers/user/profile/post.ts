@@ -38,10 +38,10 @@ interface CreateProfileRequest {
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        let authId = handlerUtil.getAuthId(event);
+        let authId = await handlerUtil.getAuthId(event);
         const user = await getUserUseCase.execute(authId!);
 
-        if(!user) {
+        if (!user) {
             return {
                 statusCode: 403,
                 headers: corsHeaders,
@@ -110,7 +110,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             userName,
             imageBytes,
             introduction,
-            url
+            url,
         });
 
         if (response.error || !response.profile) {
@@ -137,7 +137,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             headers: corsHeaders,
             body: JSON.stringify(responseBody),
         };
-
     } catch (error: any) {
         console.error('Error in createProfileHandler:', error);
         return {
@@ -145,7 +144,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             headers: corsHeaders,
             body: JSON.stringify({
                 message: 'Internal Server Error',
-                error: error.message
+                error: error.message,
             }),
         };
     }

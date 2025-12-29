@@ -34,10 +34,10 @@ interface CreateReactionResponse {
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        let authId = handlerUtil.getAuthId(event);
+        let authId = await handlerUtil.getAuthId(event);
         const user = await getUserUseCase.execute(authId!);
 
-        if(!user) {
+        if (!user) {
             return {
                 statusCode: 403,
                 headers: corsHeaders,
@@ -77,11 +77,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const reaction = await useCase.execute(
-            threadId,
-            ownerUserId,
-            ReactionType.LIKE.getValue()
-        );
+        const reaction = await useCase.execute(threadId, ownerUserId, ReactionType.LIKE.getValue());
 
         const dto = reaction.toPrimitives();
         const responseBody: CreateReactionResponse = {

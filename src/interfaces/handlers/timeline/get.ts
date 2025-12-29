@@ -31,28 +31,27 @@ const corsHeaders = {
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        let authId = handlerUtil.getAuthId(event);
-        const user = await getUserUseCase.execute(authId!);
+        let authId = await handlerUtil.getAuthId(event);
 
-        if(!user) {
-            return {
-                statusCode: 403,
-                headers: corsHeaders,
-                body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
-            };
+        if (authId) {
+            const user = await getUserUseCase.execute(authId);
+            if (!user) {
+                return {
+                    statusCode: 403,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
+                };
+            }
         }
         const { limit } = event.queryStringParameters || {};
 
-        const result = await timelineReadUseCase.execute(
-            limit ? parseInt(limit, 10) : undefined
-        );
+        const result = await timelineReadUseCase.execute(limit ? parseInt(limit, 10) : undefined);
 
         return {
             statusCode: 200,
             headers: corsHeaders,
             body: JSON.stringify(result),
         };
-
     } catch (error: any) {
         console.error('Error in getThreadHandler:', error);
         return {

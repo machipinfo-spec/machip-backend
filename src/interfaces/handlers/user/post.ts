@@ -50,10 +50,8 @@ function extractAuthIdFromToken(event: APIGatewayProxyEvent): string | null {
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        let authId = handlerUtil.getAuthId(event);
-        const claims = event.requestContext.authorizer?.claims as
-        | { [key: string]: any }
-        | undefined;
+        let authId = await handlerUtil.getAuthId(event);
+        const claims = event.requestContext.authorizer?.claims as { [key: string]: any } | undefined;
         let email = claims?.email;
         const userName = claims?.['cognito:username'] ?? null;
 
@@ -75,9 +73,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // email: 'mosamosa1228@gmail.com'
         // }
 
-
-        console.log("claims")
-        console.log(event.requestContext.authorizer?.claims)
+        console.log('claims');
+        console.log(event.requestContext.authorizer?.claims);
 
         if (!authId) {
             return {

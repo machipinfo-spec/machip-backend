@@ -34,10 +34,10 @@ interface GetProfileResponse {
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        let authId = handlerUtil.getAuthId(event);
+        let authId = await handlerUtil.getAuthId(event);
         const user = await getUserUseCase.execute(authId!);
 
-        if(!user) {
+        if (!user) {
             return {
                 statusCode: 403,
                 headers: corsHeaders,
@@ -45,11 +45,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
         const requestUserId = event.pathParameters?.userId;
-        console.log("Requested userId:", requestUserId);
+        console.log('Requested userId:', requestUserId);
         let userId;
-        if (requestUserId === "@self") {
+        if (requestUserId === '@self') {
             userId = user.userId.getValue();
-        }else{
+        } else {
             userId = requestUserId!;
         }
         const response = await getProfileUseCase.execute({ userId });
@@ -59,7 +59,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 statusCode: 404,
                 headers: corsHeaders,
                 body: JSON.stringify({
-                    message: response.error || 'Profile not found'
+                    message: response.error || 'Profile not found',
                 }),
             };
         }
@@ -84,7 +84,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             headers: corsHeaders,
             body: JSON.stringify({
                 message: 'Internal Server Error',
-                error: error.message
+                error: error.message,
             }),
         };
     }

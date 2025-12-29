@@ -33,14 +33,16 @@ interface GetPointInfoListResponse {
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        let authId = handlerUtil.getAuthId(event);
-        const user = await getUserUseCase.execute(authId!);
-        if(!user) {
-            return {
-                statusCode: 403,
-                headers: corsHeaders,
-                body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
-            };
+        let authId = await handlerUtil.getAuthId(event);
+        if (authId) {
+            const user = await getUserUseCase.execute(authId);
+            if (!user) {
+                return {
+                    statusCode: 403,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
+                };
+            }
         }
         const { threadName, category, limit } = event.queryStringParameters || {};
 
