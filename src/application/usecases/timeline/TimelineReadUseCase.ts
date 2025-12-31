@@ -10,9 +10,9 @@ export interface TimelineThreadItem {
     createdAt: Date;
     ownerUserId: string;
     ownerUserProfile: {
-        userId: string;
-        userName: string;
-        imageUrl: string;
+        userId: string | null;
+        userName: string | null;
+        imageUrl: string | null;
     };
     parentThreadId: string | null;
     childThreadIds: string[];
@@ -29,10 +29,7 @@ export interface TimelineReadResult {
 }
 
 export class TimelineReadUseCase {
-    constructor(
-        private threadRepository: IThreadRepository,
-        private profileRepository: IProfileRepository
-    ) {}
+    constructor(private threadRepository: IThreadRepository, private profileRepository: IProfileRepository) {}
 
     async execute(limit?: number): Promise<TimelineReadResult> {
         // トップレベル(ルート)スレッドを取得
@@ -46,7 +43,7 @@ export class TimelineReadUseCase {
                 let ownerUserProfile: Profile | null = null;
                 try {
                     ownerUserProfile = await this.profileRepository.findByUserId(
-                        UserId.fromExisting(primitives.ownerUserId)
+                        UserId.fromExisting(primitives.ownerUserId),
                     );
                 } catch (error) {
                     console.error(`Failed to fetch profile for user ${primitives.ownerUserId}:`, error);
@@ -58,9 +55,9 @@ export class TimelineReadUseCase {
                     createdAt: primitives.createdAt,
                     ownerUserId: primitives.ownerUserId,
                     ownerUserProfile: {
-                        userId: ownerUserProfile!.userId.getValue(),
-                        userName: ownerUserProfile!.userName.getValue(),
-                        imageUrl: ownerUserProfile!.imageUrl.getValue(),
+                        userId: ownerUserProfile?.userId.getValue() || null,
+                        userName: ownerUserProfile?.userName.getValue() || null,
+                        imageUrl: ownerUserProfile?.imageUrl.getValue() || null,
                     },
                     parentThreadId: primitives.parentThreadId,
                     childThreadIds: primitives.childThreadIds,
@@ -68,39 +65,36 @@ export class TimelineReadUseCase {
                     imageUrl: primitives.imageUrl,
                     selectDate: primitives.selectDate,
                     childThreadCount: primitives.childThreadIds.length,
-                    address: primitives.address
+                    address: primitives.address,
                 };
-            })
+            }),
         );
 
         return {
             threads,
-            total: threads.length
+            total: threads.length,
         };
     }
 }
 
 export class TimelineReadByUserUseCase {
-    constructor(
-        private threadRepository: IThreadRepository,
-        private profileRepository: IProfileRepository
-    ) {}
+    constructor(private threadRepository: IThreadRepository, private profileRepository: IProfileRepository) {}
 
     async execute(ownerUserId: string, limit?: number): Promise<TimelineReadResult> {
         // 指定ユーザーのスレッドを取得
         const userThreads = await this.threadRepository.findByOwnerUserId(ownerUserId, limit);
 
         // トップレベルのスレッドのみをフィルタリング
-        const rootThreads = userThreads.filter(thread => !thread.hasParent());
+        const rootThreads = userThreads.filter((thread) => !thread.hasParent());
 
         // オーナーのプロフィール情報を一度だけ取得(全スレッドで同じユーザー)
         let ownerUserProfile: Profile | null = null;
-        try {
-            ownerUserProfile = await this.profileRepository.findByUserId(
-                UserId.fromExisting(ownerUserId)
-            );
-        } catch (error) {
-            console.error(`Failed to fetch profile for user ${ownerUserId}:`, error);
+        if (ownerUserId) {
+            try {
+                ownerUserProfile = await this.profileRepository.findByUserId(UserId.fromExisting(ownerUserId));
+            } catch (error) {
+                console.error(`Failed to fetch profile for user ${ownerUserId}:`, error);
+            }
         }
 
         // TimelineThreadItem形式に変換
@@ -112,9 +106,9 @@ export class TimelineReadByUserUseCase {
                 createdAt: primitives.createdAt,
                 ownerUserId: primitives.ownerUserId,
                 ownerUserProfile: {
-                    userId: ownerUserProfile!.userId.getValue(),
-                    userName: ownerUserProfile!.userName.getValue(),
-                    imageUrl: ownerUserProfile!.imageUrl.getValue(),
+                    userId: ownerUserProfile?.userId.getValue() || null,
+                    userName: ownerUserProfile?.userName.getValue() || null,
+                    imageUrl: ownerUserProfile?.imageUrl.getValue() || null,
                 },
                 parentThreadId: primitives.parentThreadId,
                 childThreadIds: primitives.childThreadIds,
@@ -122,13 +116,13 @@ export class TimelineReadByUserUseCase {
                 imageUrl: primitives.imageUrl,
                 selectDate: primitives.selectDate,
                 childThreadCount: primitives.childThreadIds.length,
-                address: primitives.address
+                address: primitives.address,
             };
         });
 
         return {
             threads,
-            total: threads.length
+            total: threads.length,
         };
     }
 }

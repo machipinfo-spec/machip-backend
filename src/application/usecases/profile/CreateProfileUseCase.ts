@@ -24,13 +24,10 @@ export interface CreateProfileResponse {
 }
 
 // ====== S3 クライアント ======
-const s3 = new S3Client({ region: process.env.AWS_REGION || "ap-northeast-1" });
+const s3 = new S3Client({ region: process.env.AWS_REGION || 'ap-northeast-1' });
 
 // S3 バケット名（CloudFormation と合わせる）
-const BUCKET_NAME =
-    process.env.IS_STG === 'true'
-        ? 'tetra-images-stg'
-        : 'tetra-images-poc';
+const BUCKET_NAME = process.env.IS_STG === 'true' ? 'tetra-images-stg' : 'tetra-images-poc';
 
 export class CreateProfileUseCase {
     constructor(private readonly profileRepository: IProfileRepository) {}
@@ -105,10 +102,7 @@ export class CreateProfileUseCase {
             // -------------------------
             await this.profileRepository.save(profile);
 
-            console.log('Profile saved successfully');
-
             return { profile };
-
         } catch (error) {
             console.log('Error in CreateUserProfileUseCase:', error);
             return {

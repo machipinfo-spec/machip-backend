@@ -31,7 +31,7 @@ interface UpdateProfileResponse {
 
 export interface UpdateProfileRequest {
     userName?: string;
-    imageBytes?: Buffer;
+    imageBase64?: string;
     introduction?: string;
     url: string | null;
 }
@@ -41,10 +41,10 @@ export interface UpdateProfileRequest {
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        let authId = handlerUtil.getAuthId(event);
+        let authId = await handlerUtil.getAuthId(event);
         const user = await getUserUseCase.execute(authId!);
 
-        if(!user) {
+        if (!user) {
             return {
                 statusCode: 403,
                 headers: corsHeaders,
@@ -52,7 +52,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
         const userId = user.userId.getValue();
-        
+
         // リクエストボディの解析
         if (!event.body) {
             return {
@@ -73,10 +73,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const { userName, imageBytes, introduction, url } = requestBody;
+        const { userName, imageBase64, introduction, url } = requestBody;
 
         // 少なくとも1つのフィールドが指定されているか確認
-        if (userName === undefined && imageBytes === undefined && introduction === undefined) {
+        if (userName === undefined && imageBase64 === undefined && introduction === undefined) {
             return {
                 statusCode: 400,
                 headers: corsHeaders,
@@ -86,6 +86,23 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 }),
             };
         }
+        // ------------------------------------
+        // ★ Base64文字列 → バイナリへ変換
+        // ------------------------------------
+        let imageBytes: Buffer | null = null;
+        if (imageBase64) {
+            try {
+                // 「data:image/png;base64,xxxxxxxx」の場合はプレフィックス除去
+                const base64Data = imageBase64.replace(/^data:.*;base64,/, '');
+                imageBytes = Buffer.from(base64Data, 'base64');
+            } catch (err) {
+                return {
+                    statusCode: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: 'Invalid Base64 image' }),
+                };
+            }
+        }
 
         // UseCase実行
         const response = await updateProfileUseCase.execute({
@@ -93,7 +110,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             userName,
             imageBytes,
             introduction,
-            url
+            url,
         });
 
         if (response.error || !response.profile) {
@@ -128,7 +145,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             headers: corsHeaders,
             body: JSON.stringify({
                 message: 'Internal Server Error',
-                error: error.message
+                error: error.message,
             }),
         };
     }

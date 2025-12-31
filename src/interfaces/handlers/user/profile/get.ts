@@ -34,22 +34,35 @@ interface GetProfileResponse {
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        let authId = handlerUtil.getAuthId(event);
-        const user = await getUserUseCase.execute(authId!);
+        let authId = await handlerUtil.getAuthId(event);
 
-        if(!user) {
+        let user = null;
+        if (authId) {
+            user = await getUserUseCase.execute(authId);
+            if (!user) {
+                return {
+                    statusCode: 403,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
+                };
+            }
+        }
+
+        const requestUserId = event.pathParameters?.userId;
+
+        // ゲストの場合、@selfは許可しない（認証が必要）
+        if (!authId && requestUserId === '@self') {
             return {
-                statusCode: 403,
+                statusCode: 401,
                 headers: corsHeaders,
-                body: JSON.stringify({ message: 'Forbidden: User does not exist' }),
+                body: JSON.stringify({ message: 'Unauthorized: Authentication required for @self' }),
             };
         }
-        const requestUserId = event.pathParameters?.userId;
-        console.log("Requested userId:", requestUserId);
+
         let userId;
-        if (requestUserId === "@self") {
-            userId = user.userId.getValue();
-        }else{
+        if (requestUserId === '@self') {
+            userId = user!.userId.getValue();
+        } else {
             userId = requestUserId!;
         }
         const response = await getProfileUseCase.execute({ userId });
@@ -59,7 +72,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 statusCode: 404,
                 headers: corsHeaders,
                 body: JSON.stringify({
-                    message: response.error || 'Profile not found'
+                    message: response.error || 'Profile not found',
                 }),
             };
         }
@@ -84,7 +97,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             headers: corsHeaders,
             body: JSON.stringify({
                 message: 'Internal Server Error',
-                error: error.message
+                error: error.message,
             }),
         };
     }

@@ -54,7 +54,7 @@ interface CreatePointInfoResponse {
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        let authId = handlerUtil.getAuthId(event);
+        let authId = await handlerUtil.getAuthId(event);
         const user = await getUserUseCase.execute(authId!);
 
         if (!user) {
@@ -98,7 +98,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         let imageBytes: Buffer | undefined;
-        if(imageBase64){
+        if (imageBase64) {
             // ------------------------------------
             // ★ Base64文字列 → バイナリへ変換
             // ------------------------------------
@@ -124,7 +124,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             selectDate: selectDate,
             imageBuffer: imageBytes || null,
         });
-        if(pointCreateResponse.error || !pointCreateResponse.pointInfo){
+        if (pointCreateResponse.error || !pointCreateResponse.pointInfo) {
             return {
                 statusCode: 500,
                 headers: corsHeaders,
@@ -141,13 +141,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             point.getId().getValue(),
             imageBytes || null,
             selectDate,
-            point.getAddress()
+            point.getAddress(),
         );
-        if(threadCreateResponse.error || !threadCreateResponse.thread){
+        if (threadCreateResponse.error || !threadCreateResponse.thread) {
             return {
                 statusCode: 500,
                 headers: corsHeaders,
-                body: JSON.stringify({ message: 'Failed to create thread for point info', error: threadCreateResponse.error }),
+                body: JSON.stringify({
+                    message: 'Failed to create thread for point info',
+                    error: threadCreateResponse.error,
+                }),
             };
         }
 

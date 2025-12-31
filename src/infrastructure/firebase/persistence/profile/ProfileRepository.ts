@@ -40,9 +40,7 @@ export class ProfileRepository implements IProfileRepository {
         const { db } = await getDbAndAuth();
 
         // profileIdで該当ドキュメントを検索
-        const query = db
-            .collection(this.tableName)
-            .where('profileId', '==', profile.profileId.getValue());
+        const query = db.collection(this.tableName).where('profileId', '==', profile.profileId.getValue());
 
         const querySnapshot = await query.get();
 
@@ -69,9 +67,7 @@ export class ProfileRepository implements IProfileRepository {
     async delete(profile: Profile): Promise<void> {
         const { db } = await getDbAndAuth();
 
-        const query = db
-            .collection(this.tableName)
-            .where('profileId', '==', profile.profileId.getValue());
+        const query = db.collection(this.tableName).where('profileId', '==', profile.profileId.getValue());
 
         const querySnapshot = await query.get();
 
@@ -89,9 +85,7 @@ export class ProfileRepository implements IProfileRepository {
     async findByProfileId(profileId: ProfileId): Promise<Profile | null> {
         const { db } = await getDbAndAuth();
 
-        const query = db
-            .collection(this.tableName)
-            .where('profileId', '==', profileId.getValue());
+        const query = db.collection(this.tableName).where('profileId', '==', profileId.getValue());
 
         const querySnapshot = await query.get();
 
@@ -109,9 +103,7 @@ export class ProfileRepository implements IProfileRepository {
     async findByUserId(userId: UserId): Promise<Profile | null> {
         const { db } = await getDbAndAuth();
 
-        const query = db
-            .collection(this.tableName)
-            .where('userId', '==', userId.getValue());
+        const query = db.collection(this.tableName).where('userId', '==', userId.getValue());
 
         const querySnapshot = await query.get();
 
@@ -123,7 +115,6 @@ export class ProfileRepository implements IProfileRepository {
         return this.mapToProfile(doc);
     }
 
-
     /**
      * FirestoreのドキュメントデータをProfileエンティティにマッピングする
      */
@@ -134,7 +125,7 @@ export class ProfileRepository implements IProfileRepository {
             UserName.create(data.userName),
             ImageUrl.create(data.imageUrl),
             Introduction.create(data.introduction),
-            ProfileUrl.create(data.url)
+            ProfileUrl.create(data.url),
         );
     }
 }

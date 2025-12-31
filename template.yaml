@@ -1,379 +1,382 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  tetra-backend
+    tetra-backend
 
 Transform:
-- AWS::Serverless-2016-10-31
+    - AWS::Serverless-2016-10-31
 
 Parameters:
-  Stage:
-    Type: String
-    AllowedValues:
-      - poc
-      - stg
-    Default: poc
+    Stage:
+        Type: String
+        AllowedValues:
+            - poc
+            - stg
+        Default: poc
 
 Conditions:
-  IsStg: !Equals [!Ref Stage, stg]
-  IsPoc: !Equals [!Ref Stage, poc]
+    IsStg: !Equals [!Ref Stage, stg]
+    IsPoc: !Equals [!Ref Stage, poc]
 
 # ============================
 #  追加：全 Lambda へ環境変数を付与
 # ============================
 Globals:
-  Function:
-    Environment:
-      Variables:
-        IS_STG: !If
-          - IsStg
-          - "true"
-          - "false"
+    Function:
+        Environment:
+            Variables:
+                IS_STG: !If
+                    - IsStg
+                    - 'true'
+                    - 'false'
+                COGNITO_USER_POOL_ID: 'ap-northeast-1_b6QnfWCPc'
+                COGNITO_CLIENT_ID: '6ls2uqvl8u1g1eo89dgibbr0a1'
 
 Resources:
-  Tetra:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: !If
-        - IsStg
-        - "tetra-stg"
-        - "tetra-poc"
-      StageName: Prod
-      Auth:
-        Authorizers:
-          CognitoAuthorizer:
-            UserPoolArn: !Sub "arn:aws:cognito-idp:ap-northeast-1:338880795815:userpool/ap-northeast-1_b6QnfWCPc"
-            Identity:
-              Header: Authorization
-        DefaultAuthorizer: CognitoAuthorizer
-        AddDefaultAuthorizerToCorsPreflight: false
-      Cors:
-        AllowMethods: "'GET,PUT,POST,DELETE,OPTIONS'"
-        AllowOrigin: !If
-          - IsStg
-          - "'https://tetra-web-chi.vercel.app'"
-          - "'http://localhost:3000'"
-        AllowHeaders: "'Content-Type,Authorization'"
-        AllowCredentials: true
-
-  # 画像保管用S3バケット
-  ImageBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !If
-        - IsStg
-        - "tetra-images-stg"
-        - "tetra-images-poc"
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      CorsConfiguration:
-        CorsRules:
-          - AllowedOrigins:
-              - !If
+    Tetra:
+        Type: AWS::Serverless::Api
+        Properties:
+            Name: !If
                 - IsStg
-                - "https://tetra-web-chi.vercel.app"
-                - "http://localhost:3000"
-            AllowedMethods:
-              - GET
-              - PUT
-              - POST
-              - DELETE
-            AllowedHeaders:
-              - "*"
-            MaxAge: 3600
-      LifecycleConfiguration:
-        Rules:
-          - Id: DeleteOldVersions
-            Status: Enabled
-            NoncurrentVersionExpirationInDays: 30
-      VersioningConfiguration:
-        Status: Enabled
+                - 'tetra-stg'
+                - 'tetra-poc'
+            StageName: Prod
+            Auth:
+                Authorizers:
+                    CognitoAuthorizer:
+                        UserPoolArn: !Sub 'arn:aws:cognito-idp:ap-northeast-1:338880795815:userpool/ap-northeast-1_b6QnfWCPc'
+                        Identity:
+                            Header: Authorization
+                DefaultAuthorizer: CognitoAuthorizer
+                AddDefaultAuthorizerToCorsPreflight: false
+            Cors:
+                AllowMethods: "'GET,PUT,POST,DELETE,OPTIONS'"
+                AllowOrigin: !If
+                    - IsStg
+                    - "'https://tetra-web-chi.vercel.app'"
+                    - "'http://localhost:3000'"
+                AllowHeaders: "'Content-Type,Authorization'"
+                AllowCredentials: true
 
-  # Lambda関数からのS3アクセス用ポリシー
-  ImageBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref ImageBucket
-      PolicyDocument:
-        Statement:
-          - Sid: AllowLambdaAccess
-            Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action:
-              - s3:GetObject
-              - s3:PutObject
-              - s3:DeleteObject
-            Resource: !Sub "${ImageBucket.Arn}/*"
-            Condition:
-              StringEquals:
-                aws:SourceAccount: !Ref AWS::AccountId
+    # 画像保管用S3バケット
+    ImageBucket:
+        Type: AWS::S3::Bucket
+        Properties:
+            BucketName: !If
+                - IsStg
+                - 'tetra-images-stg'
+                - 'tetra-images-poc'
+            PublicAccessBlockConfiguration:
+                BlockPublicAcls: true
+                BlockPublicPolicy: true
+                IgnorePublicAcls: true
+                RestrictPublicBuckets: true
+            CorsConfiguration:
+                CorsRules:
+                    - AllowedOrigins:
+                          - !If
+                            - IsStg
+                            - 'https://tetra-web-chi.vercel.app'
+                            - 'http://localhost:3000'
+                      AllowedMethods:
+                          - GET
+                          - PUT
+                          - POST
+                          - DELETE
+                      AllowedHeaders:
+                          - '*'
+                      MaxAge: 3600
+            LifecycleConfiguration:
+                Rules:
+                    - Id: DeleteOldVersions
+                      Status: Enabled
+                      NoncurrentVersionExpirationInDays: 30
+            VersioningConfiguration:
+                Status: Enabled
 
-  # User
-  UserFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: src/interfaces/handlers/user/
-      Handler: index.lambdaHandler
-      Runtime: nodejs22.x
-      Timeout: 30
-      MemorySize: 512
-      Policies:
-        - SSMParameterWithSlashPrefixReadPolicy:
-            ParameterName: "/tetra/firebase/*"
-        - S3CrudPolicy:
-            BucketName: !Ref ImageBucket
-      Architectures:
-        - x86_64
-      Events:
-        UserCreate:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /user
-            Method: POST
-            Auth:
-              Authorizer: CognitoAuthorizer
-        FindUser:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /user
-            Method: GET
-            Auth:
-              Authorizer: CognitoAuthorizer
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints:
-          - index.ts
+    # Lambda関数からのS3アクセス用ポリシー
+    ImageBucketPolicy:
+        Type: AWS::S3::BucketPolicy
+        Properties:
+            Bucket: !Ref ImageBucket
+            PolicyDocument:
+                Statement:
+                    - Sid: AllowLambdaAccess
+                      Effect: Allow
+                      Principal:
+                          Service: lambda.amazonaws.com
+                      Action:
+                          - s3:GetObject
+                          - s3:PutObject
+                          - s3:DeleteObject
+                      Resource: !Sub '${ImageBucket.Arn}/*'
+                      Condition:
+                          StringEquals:
+                              aws:SourceAccount: !Ref AWS::AccountId
 
-  MapFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: src/interfaces/handlers/map/
-      Handler: index.lambdaHandler
-      Runtime: nodejs22.x
-      Timeout: 30
-      MemorySize: 512
-      Policies:
-        - SSMParameterWithSlashPrefixReadPolicy:
-            ParameterName: "/tetra/firebase/*"
-        - SSMParameterWithSlashPrefixReadPolicy:
-            ParameterName: "/tetra/google/*"
-        - S3CrudPolicy:
-            BucketName: !Ref ImageBucket
-      Architectures:
-        - x86_64
-      Events:
-        GetPointInfoList:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /map
-            Method: GET
-            Auth:
-              Authorizer: CognitoAuthorizer
-        CreatePointInfo:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /map
-            Method: POST
-            Auth:
-              Authorizer: CognitoAuthorizer
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints:
-          - index.ts
+    # User
+    UserFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/user/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - S3CrudPolicy:
+                      BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                UserCreate:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user
+                        Method: POST
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+                FindUser:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user
+                        Method: GET
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
 
-  # timeline
-  TimelineFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: src/interfaces/handlers/timeline/
-      Handler: index.lambdaHandler
-      Runtime: nodejs22.x
-      Timeout: 30
-      MemorySize: 512
-      Policies:
-        - SSMParameterWithSlashPrefixReadPolicy:
-            ParameterName: "/tetra/firebase/*"
-        - S3CrudPolicy:
-            BucketName: !Ref ImageBucket
-      Architectures:
-        - x86_64
-      Events:
-        GetThreadList:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /timeline
-            Method: GET
-            Auth:
-              Authorizer: CognitoAuthorizer
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints:
-          - index.ts
+    MapFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/map/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/google/*'
+                - S3CrudPolicy:
+                      BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                GetPointInfoList:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /map
+                        Path: /map
+                        Method: GET
+                        Auth:
+                            Authorizer: NONE
+                CreatePointInfo:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /map
+                        Method: POST
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
 
-  # thread
-  ThreadFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: src/interfaces/handlers/timeline/thread/
-      Handler: index.lambdaHandler
-      Runtime: nodejs22.x
-      Timeout: 30
-      MemorySize: 512
-      Policies:
-        - SSMParameterWithSlashPrefixReadPolicy:
-            ParameterName: "/tetra/firebase/*"
-        - S3CrudPolicy:
-            BucketName: !Ref ImageBucket
-      Architectures:
-        - x86_64
-      Events:
-        GetThreadList:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /timeline/thread
-            Method: GET
-            Auth:
-              Authorizer: CognitoAuthorizer
-        CreateThread:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /timeline/thread
-            Method: POST
-            Auth:
-              Authorizer: CognitoAuthorizer
-        DeleteThread:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /timeline/thread
-            Method: DELETE
-            Auth:
-              Authorizer: CognitoAuthorizer
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints:
-          - index.ts
+    # timeline
+    TimelineFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/timeline/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - S3CrudPolicy:
+                      BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                GetThreadList:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /timeline
+                        Method: GET
+                        Auth:
+                            Authorizer: NONE
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
 
-  # timelineQuery
-  TimelineQueryFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: src/interfaces/handlers/timeline/query/
-      Handler: index.lambdaHandler
-      Runtime: nodejs22.x
-      Timeout: 30
-      MemorySize: 512
-      Policies:
-        - SSMParameterWithSlashPrefixReadPolicy:
-            ParameterName: "/tetra/firebase/*"
-        - S3CrudPolicy:
-            BucketName: !Ref ImageBucket
-      Architectures:
-        - x86_64
-      Events:
-        GetThreadQuery:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /timeline/query
-            Method: GET
-            Auth:
-              Authorizer: CognitoAuthorizer
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints:
-          - index.ts
+    # thread
+    ThreadFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/timeline/thread/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - S3CrudPolicy:
+                      BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                GetThreadList:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /timeline/thread
+                        Method: GET
+                        Auth:
+                            Authorizer: NONE
+                CreateThread:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /timeline/thread
+                        Method: POST
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+                DeleteThread:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /timeline/thread
+                        Method: DELETE
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
 
-  # profile
-  ProfileFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: src/interfaces/handlers/user/profile
-      Handler: index.lambdaHandler
-      Runtime: nodejs22.x
-      Timeout: 30
-      MemorySize: 512
-      Policies:
-        - SSMParameterWithSlashPrefixReadPolicy:
-            ParameterName: "/tetra/firebase/*"
-        - S3CrudPolicy:
-            BucketName: !Ref ImageBucket
-      Architectures:
-        - x86_64
-      Events:
-        CreateProfile:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /user/profile
-            Method: POST
-            Auth:
-              Authorizer: CognitoAuthorizer
-        UpdateProfile:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /user/profile
-            Method: PUT
-            Auth:
-              Authorizer: CognitoAuthorizer
-        GetProfile:
-          Type: Api
-          Properties:
-            RestApiId: !Ref Tetra
-            Path: /user/profile/{userId}
-            Method: GET
-            Auth:
-              Authorizer: CognitoAuthorizer
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints:
-          - index.ts
+    # timelineQuery
+    TimelineQueryFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/timeline/query/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - S3CrudPolicy:
+                      BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                GetThreadQuery:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /timeline/query
+                        Method: GET
+                        Auth:
+                            Authorizer: NONE
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
+
+    # profile
+    ProfileFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/user/profile
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - S3CrudPolicy:
+                      BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                CreateProfile:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user/profile
+                        Method: POST
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+                UpdateProfile:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user/profile
+                        Method: PUT
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+                GetProfile:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user/profile/{userId}
+                        Method: GET
+                        Auth:
+                            Authorizer: NONE
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
 
 Outputs:
-  TetraApiEndpoint:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${Tetra}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
-  TetraApiId:
-    Description: "API Gateway ID"
-    Value: !Ref Tetra
-  ImageBucketName:
-    Description: "S3 bucket name for images"
-    Value: !Ref ImageBucket
-  ImageBucketArn:
-    Description: "S3 bucket ARN for images"
-    Value: !GetAtt ImageBucket.Arn
+    TetraApiEndpoint:
+        Description: 'API Gateway endpoint URL for Prod stage'
+        Value: !Sub 'https://${Tetra}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
+    TetraApiId:
+        Description: 'API Gateway ID'
+        Value: !Ref Tetra
+    ImageBucketName:
+        Description: 'S3 bucket name for images'
+        Value: !Ref ImageBucket
+    ImageBucketArn:
+        Description: 'S3 bucket ARN for images'
+        Value: !GetAtt ImageBucket.Arn
