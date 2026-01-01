@@ -6,4 +6,5 @@ export interface IMapRepository {
     findByThreadName(threadName: string, limit?: number): Promise<PointInfo[]>;
     findByCategory(category: string, limit?: number): Promise<PointInfo[]>;
     findAll(limit?: number): Promise<PointInfo[]>;
+    softDelete(pointInfoId: string): Promise<void>;
 }

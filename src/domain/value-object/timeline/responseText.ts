@@ -11,9 +11,9 @@ export class ResponseText extends ValueObject<string> {
             throw new Error('スレッド名は空にできません');
         }
 
-        if (this.value.length > 50) {
-            throw new Error('スレッド名は50文字以内である必要があります');
-        }
+        // if (this.value.length > 50) {
+        //     throw new Error('スレッド名は50文字以内である必要があります');
+        // }
     }
 
     public static create(value: string): ResponseText {
