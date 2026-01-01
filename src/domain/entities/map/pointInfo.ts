@@ -12,7 +12,7 @@ export class PointInfo {
         private readonly imageUrl: string | null,
         private readonly selectDate: Date | null,
         private readonly address: string | null,
-
+        private readonly deletedAt: Date | null,
     ) {
         Object.freeze(this);
     }
@@ -24,6 +24,7 @@ export class PointInfo {
         imageUrl: string | null,
         selectDate: Date | null,
         address: string | null,
+        deletedAt: Date | null,
         pointInfoId?: PointInfoId,
     ): PointInfo {
         return new PointInfo(
@@ -33,7 +34,8 @@ export class PointInfo {
             category,
             imageUrl,
             selectDate,
-            address
+            address,
+            deletedAt,
         );
     }
 
@@ -45,8 +47,9 @@ export class PointInfo {
         imageUrl: string | null,
         selectDate: Date | null,
         address: string | null,
+        deletedAt: Date | null,
     ): PointInfo {
-        return new PointInfo(id, geoLocation, threadName, category, imageUrl, selectDate, address);
+        return new PointInfo(id, geoLocation, threadName, category, imageUrl, selectDate, address, deletedAt);
     }
 
     public getId(): PointInfoId {
@@ -76,7 +79,8 @@ export class PointInfo {
             this.category,
             this.imageUrl,
             this.selectDate,
-            this.address
+            this.address,
+            this.deletedAt,
         );
     }
 
@@ -90,6 +94,7 @@ export class PointInfo {
             imageUrl: this.imageUrl,
             selectDate: this.selectDate,
             address: this.address,
+            deletedAt: this.deletedAt,
         };
     }
 }
@@ -103,4 +108,5 @@ export interface PointInfoDTO {
     imageUrl: string | null;
     selectDate: Date | null;
     address: string | null;
+    deletedAt: Date | null;
 }

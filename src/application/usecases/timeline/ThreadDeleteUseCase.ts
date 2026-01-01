@@ -1,6 +1,7 @@
 import { IThreadRepository } from '../../../domain/repositories/timeline/IThreadRepository';
-import { IReactionRepository } from '../../../domain/repositories/timeline/IReactionRepository';
 import { ThreadId } from '../../../domain/value-object/timeline/threadId';
+import { IMapRepository } from '../../../domain/repositories/map/IMapRepository';
+import { PointInfoId } from '../../../domain/value-object/map/pointInfoId';
 
 export interface ThreadDeleteResult {
     success: boolean;
@@ -9,10 +10,7 @@ export interface ThreadDeleteResult {
 }
 
 export class ThreadDeleteUseCase {
-    constructor(
-        private threadRepository: IThreadRepository,
-        private reactionRepository: IReactionRepository
-    ) {}
+    constructor(private threadRepository: IThreadRepository, private readonly mapRepository: IMapRepository) {}
 
     /**
      * スレッドを削除（論理削除）
@@ -20,7 +18,7 @@ export class ThreadDeleteUseCase {
      */
     async execute(threadId: string, deleteChildren: boolean = true): Promise<ThreadDeleteResult> {
         const thread = await this.threadRepository.findById(threadId);
-        
+
         if (!thread) {
             throw new Error(`Thread not found: ${threadId}`);
         }
@@ -28,22 +26,22 @@ export class ThreadDeleteUseCase {
         const deletedThreadIds: string[] = [];
         const deletedReactionIds: string[] = [];
 
-        // 子スレッドを再帰的に削除
-        if (deleteChildren) {
-            const childThreadIds = thread.getChildThreadIds();
-            for (const childThreadId of childThreadIds) {
-                const childResult = await this.execute(childThreadId.getValue(), true);
-                deletedThreadIds.push(...childResult.deletedThreadIds);
-                deletedReactionIds.push(...childResult.deletedReactionIds);
-            }
-        }
+        // 子スレッドは残しておく（削除が必要になったらコメントを外す）
+        // if (deleteChildren) {
+        //     const childThreadIds = thread.getChildThreadIds();
+        //     for (const childThreadId of childThreadIds) {
+        //         const childResult = await this.execute(childThreadId.getValue(), true);
+        //         deletedThreadIds.push(...childResult.deletedThreadIds);
+        //         deletedReactionIds.push(...childResult.deletedReactionIds);
+        //     }
+        // }
 
         // このスレッドに紐づくリアクションを削除
-        const reactions = await this.reactionRepository.findByParentId(threadId);
-        for (const reaction of reactions) {
-            await this.reactionRepository.delete(reaction.toPrimitives().id);
-            deletedReactionIds.push(reaction.toPrimitives().id);
-        }
+        // const reactions = await this.reactionRepository.findByParentId(threadId);
+        // for (const reaction of reactions) {
+        //     await this.reactionRepository.delete(reaction.toPrimitives().id);
+        //     deletedReactionIds.push(reaction.toPrimitives().id);
+        // }
 
         // 親スレッドから子スレッドの参照を削除
         const threadPrimitives = thread.toPrimitives();
@@ -60,10 +58,15 @@ export class ThreadDeleteUseCase {
         await this.threadRepository.delete(threadId);
         deletedThreadIds.push(threadId);
 
+        // マップ情報を論理削除
+        if (threadPrimitives.mapPointInfoId) {
+            await this.mapRepository.softDelete(threadPrimitives.mapPointInfoId);
+        }
+
         return {
             success: true,
             deletedThreadIds,
-            deletedReactionIds
+            deletedReactionIds,
         };
     }
 
@@ -72,7 +75,7 @@ export class ThreadDeleteUseCase {
      */
     async executeSoftDelete(threadId: string): Promise<void> {
         const thread = await this.threadRepository.findById(threadId);
-        
+
         if (!thread) {
             throw new Error(`Thread not found: ${threadId}`);
         }

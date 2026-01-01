@@ -5,12 +5,13 @@ import { ThreadDeleteUseCase } from '../../../../application/usecases/timeline/T
 import { HandlerUtil } from '../../util';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
 import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
+import { MapRepository } from '../../../../infrastructure/firebase/persistence/map/MapRepository';
 
 const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const threadRepository = new ThreadRepository();
-const reactionRepository = new ReactionRepository();
-const useCase = new ThreadDeleteUseCase(threadRepository, reactionRepository);
+const mapRepository = new MapRepository();
+const useCase = new ThreadDeleteUseCase(threadRepository, mapRepository);
 const handlerUtil = new HandlerUtil();
 
 const corsHeaders = {

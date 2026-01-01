@@ -20,6 +20,7 @@ export class MapRepository implements IMapRepository {
             selectDate: dto.selectDate,
             imageUrl: dto.imageUrl || null,
             address: dto.address || null,
+            deletedAt: dto.deletedAt || null,
         };
 
         const { db } = await getDbAndAuth();
@@ -33,6 +34,7 @@ export class MapRepository implements IMapRepository {
         if (!docRef.exists) return null;
         const data = docRef.data();
         if (!data) return null;
+        if (data.deletedAt) return null;
 
         return this.mapToPointInfo(docRef.id, data);
     }
@@ -42,6 +44,7 @@ export class MapRepository implements IMapRepository {
         const snapshot = await db
             .collection(this.tableName)
             .where('threadName', '==', threadName)
+            .where('deletedAt', '==', null)
             .limit(limit)
             .get();
 
@@ -53,6 +56,7 @@ export class MapRepository implements IMapRepository {
         const snapshot = await db
             .collection(this.tableName)
             .where('category', '==', category)
+            .where('deletedAt', '==', null)
             .limit(limit)
             .get();
 
@@ -61,10 +65,7 @@ export class MapRepository implements IMapRepository {
 
     async findAll(limit = 50): Promise<PointInfo[]> {
         const { db } = await getDbAndAuth();
-        const snapshot = await db
-            .collection(this.tableName)
-            .limit(limit)
-            .get();
+        const snapshot = await db.collection(this.tableName).where('deletedAt', '==', null).limit(limit).get();
 
         return this.mapDocsToPointInfos(snapshot);
     }
@@ -78,6 +79,7 @@ export class MapRepository implements IMapRepository {
             data.imageUrl || null,
             data.selectDate ? data.selectDate.toDate() : null,
             data.address || null,
+            data.deletedAt ? data.deletedAt.toDate() : null,
         );
     }
 
@@ -89,5 +91,17 @@ export class MapRepository implements IMapRepository {
             results.push(this.mapToPointInfo(doc.id, data));
         });
         return results;
+    }
+    async softDelete(pointInfoId: string): Promise<void> {
+        const { db } = await getDbAndAuth();
+        const docRef = await db.collection(this.tableName).doc(pointInfoId).get();
+
+        if (!docRef.exists) return;
+        const data = docRef.data();
+        if (!data) return;
+        if (data.deletedAt) return;
+
+        data.deletedAt = new Date();
+        await db.collection(this.tableName).doc(pointInfoId).set(data);
     }
 }
