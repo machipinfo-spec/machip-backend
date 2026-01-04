@@ -27,6 +27,7 @@ export class ProfileRepository implements IProfileRepository {
             createdAt: new Date(),
             updatedAt: new Date(),
             url: profile.url.getValue(),
+            deletedAt: null,
         };
 
         const { db } = await getDbAndAuth();
@@ -40,7 +41,10 @@ export class ProfileRepository implements IProfileRepository {
         const { db } = await getDbAndAuth();
 
         // profileIdで該当ドキュメントを検索
-        const query = db.collection(this.tableName).where('profileId', '==', profile.profileId.getValue());
+        const query = db
+            .collection(this.tableName)
+            .where('deletedAt', '==', null)
+            .where('profileId', '==', profile.profileId.getValue());
 
         const querySnapshot = await query.get();
 
@@ -67,7 +71,10 @@ export class ProfileRepository implements IProfileRepository {
     async delete(profile: Profile): Promise<void> {
         const { db } = await getDbAndAuth();
 
-        const query = db.collection(this.tableName).where('profileId', '==', profile.profileId.getValue());
+        const query = db
+            .collection(this.tableName)
+            .where('deletedAt', '==', null)
+            .where('profileId', '==', profile.profileId.getValue());
 
         const querySnapshot = await query.get();
 
@@ -85,7 +92,10 @@ export class ProfileRepository implements IProfileRepository {
     async findByProfileId(profileId: ProfileId): Promise<Profile | null> {
         const { db } = await getDbAndAuth();
 
-        const query = db.collection(this.tableName).where('profileId', '==', profileId.getValue());
+        const query = db
+            .collection(this.tableName)
+            .where('deletedAt', '==', null)
+            .where('profileId', '==', profileId.getValue());
 
         const querySnapshot = await query.get();
 
@@ -103,7 +113,10 @@ export class ProfileRepository implements IProfileRepository {
     async findByUserId(userId: UserId): Promise<Profile | null> {
         const { db } = await getDbAndAuth();
 
-        const query = db.collection(this.tableName).where('userId', '==', userId.getValue());
+        const query = db
+            .collection(this.tableName)
+            .where('deletedAt', '==', null)
+            .where('userId', '==', userId.getValue());
 
         const querySnapshot = await query.get();
 
@@ -113,6 +126,24 @@ export class ProfileRepository implements IProfileRepository {
 
         const doc = querySnapshot.docs[0].data();
         return this.mapToProfile(doc);
+    }
+
+    async softDelete(profileId: ProfileId): Promise<void> {
+        const { db } = await getDbAndAuth();
+
+        const query = db
+            .collection(this.tableName)
+            .where('deletedAt', '==', null)
+            .where('profileId', '==', profileId.getValue());
+
+        const querySnapshot = await query.get();
+
+        if (querySnapshot.empty) {
+            throw new Error(`Profile not found: ${profileId.getValue()}`);
+        }
+
+        const docId = querySnapshot.docs[0].id;
+        await db.collection(this.tableName).doc(docId).update({ deletedAt: new Date() });
     }
 
     /**
