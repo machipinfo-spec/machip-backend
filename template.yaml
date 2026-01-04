@@ -30,7 +30,7 @@ Globals:
                     - 'false'
                 COGNITO_USER_POOL_ID: 'ap-northeast-1_b6QnfWCPc'
                 COGNITO_CLIENT_ID: '6ls2uqvl8u1g1eo89dgibbr0a1'
-
+                BLOB_BASE_URL: 'https://tetra-images-poc.s3.ap-northeast-1.amazonaws.com'
 Resources:
     Tetra:
         Type: AWS::Serverless::Api
@@ -127,6 +127,11 @@ Resources:
                       ParameterName: '/tetra/firebase/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
+                - Statement:
+                    - Effect: Allow
+                      Action:
+                          - cognito-idp:AdminDeleteUser
+                      Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/ap-northeast-1_b6QnfWCPc'
             Architectures:
                 - x86_64
             Events:
@@ -144,6 +149,14 @@ Resources:
                         RestApiId: !Ref Tetra
                         Path: /user
                         Method: GET
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+                DeleteUser:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user
+                        Method: DELETE
                         Auth:
                             Authorizer: CognitoAuthorizer
         Metadata:

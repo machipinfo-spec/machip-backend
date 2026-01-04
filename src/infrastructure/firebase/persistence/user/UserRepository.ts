@@ -7,8 +7,9 @@ import { getDbAndAuth } from '../../config/firebaseAdmin';
 import { User } from '../../../../domain/entities/user/user';
 
 export class UserRepository implements IUserRepository {
-    delete(user: User): Promise<void> {
-        throw new Error('Method not implemented.');
+    async delete(user: User): Promise<void> {
+        const { db } = await getDbAndAuth();
+        db.collection(this.tableName).doc(user.userId.getValue()).delete();
     }
     update(user: User): Promise<void> {
         throw new Error('Method not implemented.');

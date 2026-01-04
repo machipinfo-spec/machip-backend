@@ -56,8 +56,9 @@ export class TimelineReadUseCase {
                     ownerUserId: primitives.ownerUserId,
                     ownerUserProfile: {
                         userId: ownerUserProfile?.userId.getValue() || null,
-                        userName: ownerUserProfile?.userName.getValue() || null,
-                        imageUrl: ownerUserProfile?.imageUrl.getValue() || null,
+                        userName: ownerUserProfile?.userName.getValue() || '存在しないユーザー',
+                        imageUrl:
+                            ownerUserProfile?.imageUrl.getValue() || `${process.env.BLOB_BASE_URL}/profile/default.png`,
                     },
                     parentThreadId: primitives.parentThreadId,
                     childThreadIds: primitives.childThreadIds,
@@ -107,8 +108,9 @@ export class TimelineReadByUserUseCase {
                 ownerUserId: primitives.ownerUserId,
                 ownerUserProfile: {
                     userId: ownerUserProfile?.userId.getValue() || null,
-                    userName: ownerUserProfile?.userName.getValue() || null,
-                    imageUrl: ownerUserProfile?.imageUrl.getValue() || null,
+                    userName: ownerUserProfile?.userName.getValue() || '存在しないユーザー',
+                    imageUrl:
+                        ownerUserProfile?.imageUrl.getValue() || `${process.env.BLOB_BASE_URL}/profile/default.png`,
                 },
                 parentThreadId: primitives.parentThreadId,
                 childThreadIds: primitives.childThreadIds,

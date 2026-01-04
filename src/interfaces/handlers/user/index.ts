@@ -1,12 +1,13 @@
 import { APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda';
 import { handler as getHandler } from './get';
 import { handler as postHandler } from './post';
+import { handler as deleteHandler } from './delete';
 
 // CORS headers
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
     'Content-Type': 'application/json',
 };
 
@@ -31,6 +32,8 @@ export const lambdaHandler: APIGatewayProxyHandler = async (event): Promise<APIG
                 return await getHandler(event);
             case 'POST':
                 return await postHandler(event);
+            case 'DELETE':
+                return await deleteHandler(event);
             default:
                 return {
                     statusCode: 405,
