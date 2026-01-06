@@ -9,13 +9,27 @@ import { UserRepository } from '../../../infrastructure/firebase/persistence/use
 import { HandlerUtil } from '../util';
 import { ReverseGeocodingRepository } from '../../../infrastructure/gcp/persistence/ReverseGeocodingRepository';
 import { ProfileRepository } from '../../../infrastructure/firebase/persistence/profile/ProfileRepository';
-
+import { MessageSendingService } from '../../../application/services/inbox/MessageSendingService';
+import { MessageBroadcastRepository } from '../../../infrastructure/firebase/persistence/inbox/MessageBroadcastRepository';
+import { MessageRepository } from '../../../infrastructure/firebase/persistence/inbox/MessageRepository';
+import { UserMessageRepository } from '../../../infrastructure/firebase/persistence/inbox/UserMessageRepository';
+import { Logger } from '../../../shared/logger';
 const reverseGeocodingRepository = new ReverseGeocodingRepository();
 const mapRepository = new MapRepository();
 const useCase = new CreatePointInfoUseCase(mapRepository, reverseGeocodingRepository);
 const threadRepository = new ThreadRepository();
 const profileRepository = new ProfileRepository();
-const threadCreateUseCase = new ThreadCreateUseCase(threadRepository, profileRepository);
+const messageRepository = new MessageRepository();
+const userMessageRepository = new UserMessageRepository();
+const messageBroadcastRepository = new MessageBroadcastRepository();
+const messageSendingService = new MessageSendingService(
+    profileRepository,
+    messageRepository,
+    userMessageRepository,
+    messageBroadcastRepository,
+    new Logger('MessageSendingService'),
+);
+const threadCreateUseCase = new ThreadCreateUseCase(threadRepository, profileRepository, messageSendingService);
 const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();

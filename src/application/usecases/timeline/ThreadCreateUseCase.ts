@@ -7,6 +7,7 @@ import { PointInfoId } from '../../../domain/value-object/map/pointInfoId';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Profile } from '../../../domain/entities/profile/profile';
 import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
+import { MessageSendingService } from '../../services/inbox/MessageSendingService';
 
 // ====== S3 クライアント ======
 const s3 = new S3Client({ region: process.env.AWS_REGION || 'ap-northeast-1' });
@@ -39,7 +40,11 @@ export interface ThreadCreateResponse {
 }
 
 export class ThreadCreateUseCase {
-    constructor(private threadRepository: IThreadRepository, private profileRepository: IProfileRepository) {}
+    constructor(
+        private threadRepository: IThreadRepository,
+        private profileRepository: IProfileRepository,
+        private readonly messageSendingService: MessageSendingService,
+    ) {}
     private async convertToThreadItem(thread: Thread): Promise<ThreadItem> {
         const p = thread.toPrimitives();
 
@@ -142,6 +147,14 @@ export class ThreadCreateUseCase {
                 const updatedParent = parent.addChildThread(threadId);
                 await this.threadRepository.save(updatedParent);
             }
+            await this.messageSendingService.sendMessage({
+                type: 'system',
+                subject: 'リプライがつきました',
+                content: `A new thread has been created: ${threadName}`,
+                senderUserId: UserId.SYSTEM_ID.getValue(),
+                deliveryType: 'single',
+                targetUserIds: [ownerUserId],
+            });
         }
         const threadItem = await this.convertToThreadItem(thread);
 
