@@ -1,14 +1,7 @@
 import { Logger } from '../../../shared/logger';
-import { MessageSendingService } from '../../services/inbox/MessageSendingService';
+import { MessageSendingService, MessageSendingRequest } from '../../services/inbox/MessageSendingService';
 
-export interface SendMessageRequest {
-    type: 'system' | 'reply';
-    subject: string;
-    content: string;
-    senderUserId: string;
-    deliveryType: 'single' | 'multiple' | 'all';
-    targetUserIds?: string[]; // single/multiple の場合
-}
+export type SendMessageRequest = MessageSendingRequest;
 
 export interface SendMessageResponse {
     messageId: string;
@@ -30,14 +23,7 @@ export class SendMessageUseCase {
             this.logger.info('SendMessageUseCase実行開始', { request });
 
             // MessageSendingServiceに委譲
-            const result = await this.messageSendingService.sendMessage({
-                type: request.type,
-                subject: request.subject,
-                content: request.content,
-                senderUserId: request.senderUserId,
-                deliveryType: request.deliveryType,
-                targetUserIds: request.targetUserIds,
-            });
+            const result = await this.messageSendingService.sendMessage(request);
 
             this.logger.info('SendMessageUseCase実行完了', {
                 messageId: result.messageId,

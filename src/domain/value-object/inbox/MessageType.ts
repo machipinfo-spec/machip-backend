@@ -4,7 +4,7 @@ export type MessageTypeValue = 'system' | 'ai' | 'reply';
 
 export class MessageType extends ValueObject<MessageTypeValue> {
     protected validate(): void {
-        const validTypes: ReadonlyArray<MessageTypeValue> = ['system', 'ai'];
+        const validTypes: ReadonlyArray<MessageTypeValue> = ['system', 'ai', 'reply'];
         if (!validTypes.includes(this.value)) {
             throw new Error(`Invalid message type: ${this.value}. Must be one of: ${validTypes.join(', ')}`);
         }

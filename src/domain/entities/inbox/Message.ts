@@ -1,5 +1,6 @@
 import { CreatedAt } from '../../value-object/inbox/CreatedAt';
-import { MessageContent } from '../../value-object/inbox/MessageContent';
+import { SystemMessageContent } from '../../value-object/inbox/SystemMessageContent';
+import { ReplyMessageContent } from '../../value-object/inbox/ReplyMessageContent';
 import { MessageId } from '../../value-object/inbox/MessageId';
 import { MessageSubject } from '../../value-object/inbox/MessageSubject';
 import { MessageType } from '../../value-object/inbox/MessageType';
@@ -7,6 +8,8 @@ import { ReadStatus } from '../../value-object/inbox/ReadStatus';
 import { ValidationError } from '../DomainError';
 import { DTOMapper } from '../DTOMapper';
 import { UserId } from '../../value-object/users/UserId';
+
+export type MessageContent = SystemMessageContent | ReplyMessageContent;
 
 export interface MessageDTO {
     messageId: string;
@@ -82,12 +85,13 @@ export class Message implements DTOMapper<Message, MessageDTO> {
     }
 
     private validateBusinessRules(): void {
-        // if (this.content.getValue().length > Message.MAX_CONTENT_LENGTH) {
-        //     throw new ValidationError(
-        //         `Message content cannot exceed ${Message.MAX_CONTENT_LENGTH} characters`,
-        //         'content',
-        //     );
-        // }
+        // Validate content type matches message type
+        if (this.type.getValue() === 'system' && !(this.content instanceof SystemMessageContent)) {
+            throw new ValidationError('System message must have SystemMessageContent', 'content');
+        }
+        if (this.type.getValue() === 'reply' && !(this.content instanceof ReplyMessageContent)) {
+            throw new ValidationError('Reply message must have ReplyMessageContent', 'content');
+        }
     }
 
     // ファクトリメソッド
@@ -131,12 +135,29 @@ export class Message implements DTOMapper<Message, MessageDTO> {
 
         try {
             const senderUserId = UserId.fromExisting(dto.senderUserId);
+            const messageType = MessageType.fromString(dto.type);
+
+            // Parse content based on type
+            let content: MessageContent;
+            if (dto.type === 'system' || dto.type === 'ai') {
+                // Try to parse as JSON first, fallback to legacy string format
+                try {
+                    content = SystemMessageContent.fromJSON(dto.content);
+                } catch {
+                    // Legacy format: plain string
+                    content = SystemMessageContent.create(dto.content);
+                }
+            } else if (dto.type === 'reply') {
+                content = ReplyMessageContent.fromJSON(dto.content);
+            } else {
+                throw new ValidationError(`Unknown message type: ${dto.type}`, 'type');
+            }
 
             return new Message(
                 MessageId.fromExisting(dto.messageId),
-                MessageType.fromString(dto.type),
+                messageType,
                 MessageSubject.create(dto.subject),
-                MessageContent.create(dto.content),
+                content,
                 senderUserId,
                 CreatedAt.fromISOString(dto.createdAt),
                 ReadStatus.fromBoolean(dto.isRead),
@@ -151,7 +172,7 @@ export class Message implements DTOMapper<Message, MessageDTO> {
         return Message.create(
             MessageType.system(),
             MessageSubject.create(subject),
-            MessageContent.create(content),
+            SystemMessageContent.create(content),
             UserId.fromExisting(senderUserId),
         );
     }
@@ -162,7 +183,7 @@ export class Message implements DTOMapper<Message, MessageDTO> {
             messageId: this.messageId.getValue(),
             type: this.type.getValue(),
             subject: this.subject.getValue(),
-            content: this.content.getValue(),
+            content: this.content.toJSON(),
             senderUserId: this.senderUserId.getValue(),
             createdAt: this.createdAt.toISOString(),
             isRead: this.readStatus.getValue(),
@@ -234,11 +255,16 @@ export class Message implements DTOMapper<Message, MessageDTO> {
     }
 
     public hasLongContent(): boolean {
-        return this.content.getValue().length > Message.CONTENT_PREVIEW_LENGTH * 2;
+        return this.content.getCharacterCount() > Message.CONTENT_PREVIEW_LENGTH * 2;
     }
 
     public isEmpty(): boolean {
-        return this.subject.getValue().trim() === '' && this.content.getValue().trim() === '';
+        if (this.content instanceof SystemMessageContent) {
+            return this.subject.getValue().trim() === '' && this.content.getMessage().trim() === '';
+        } else if (this.content instanceof ReplyMessageContent) {
+            return this.subject.getValue().trim() === '' && this.content.getContent().trim() === '';
+        }
+        return false;
     }
 
     public equals(other?: Message): boolean {
@@ -246,5 +272,14 @@ export class Message implements DTOMapper<Message, MessageDTO> {
             return false;
         }
         return this.messageId.equals(other.messageId);
+    }
+
+    // Type guards
+    public isSystemMessage(): this is Message & { content: SystemMessageContent } {
+        return this.content instanceof SystemMessageContent;
+    }
+
+    public isReplyMessage(): this is Message & { content: ReplyMessageContent } {
+        return this.content instanceof ReplyMessageContent;
     }
 }

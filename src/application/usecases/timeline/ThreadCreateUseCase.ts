@@ -146,10 +146,20 @@ export class ThreadCreateUseCase {
                 const threadId = ThreadId.fromExisting(thread.toPrimitives().id);
                 const updatedParent = parent.addChildThread(threadId);
                 await this.threadRepository.save(updatedParent);
+
+                // Get reply user profile
+                const replyUserProfile = await this.profileRepository.findByUserId(UserId.fromExisting(ownerUserId));
+
                 await this.messageSendingService.sendMessage({
                     type: 'reply',
                     subject: '返信があります',
-                    content: `返信がつきました: ${threadName}`,
+                    content: {
+                        ownerThreadId: parent.toPrimitives().id,
+                        threadId: thread.toPrimitives().id,
+                        content: `${threadName}`,
+                        replyUserId: ownerUserId,
+                        replyUserName: replyUserProfile?.userName.getValue() || 'Unknown User',
+                    },
                     senderUserId: UserId.SYSTEM_ID.getValue(),
                     deliveryType: 'single',
                     targetUserIds: [parent.getOwnerUserId().getValue()],

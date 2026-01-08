@@ -4,7 +4,8 @@ import { IMessageBroadcastRepository } from '../../../domain/repositories/inbox/
 import { Message } from '../../../domain/entities/inbox/Message';
 import { MessageDeliveryService } from '../../../domain/services/inbox/MessageDeliveryService';
 import { Logger } from '../../../shared/logger';
-import { MessageContent } from '../../../domain/value-object/inbox/MessageContent';
+import { SystemMessageContent } from '../../../domain/value-object/inbox/SystemMessageContent';
+import { ReplyMessageContent } from '../../../domain/value-object/inbox/ReplyMessageContent';
 import { MessageSubject } from '../../../domain/value-object/inbox/MessageSubject';
 import { MessageType } from '../../../domain/value-object/inbox/MessageType';
 import { UserId } from '../../../domain/value-object/users/UserId';
@@ -15,14 +16,33 @@ import { ImageUrl } from '../../../domain/value-object/users/ImageUrl';
 import { Introduction } from '../../../domain/value-object/profile/Introduction';
 import { ProfileUrl } from '../../../domain/value-object/profile/ProfileUrl';
 
-export interface MessageSendingRequest {
-    type: 'system' | 'reply';
+export interface SystemMessageRequest {
+    type: 'system';
     subject: string;
-    content: string;
+    content: {
+        message: string;
+    };
     senderUserId: string;
     deliveryType: 'single' | 'multiple' | 'all';
     targetUserIds?: string[];
 }
+
+export interface ReplyMessageRequest {
+    type: 'reply';
+    subject: string;
+    content: {
+        ownerThreadId: string;
+        threadId: string;
+        content: string;
+        replyUserId: string;
+        replyUserName: string;
+    };
+    senderUserId: string;
+    deliveryType: 'single' | 'multiple' | 'all';
+    targetUserIds?: string[];
+}
+
+export type MessageSendingRequest = SystemMessageRequest | ReplyMessageRequest;
 
 export interface MessageSendingResult {
     messageId: string;
@@ -94,7 +114,7 @@ export class MessageSendingService {
         return this.sendMessage({
             type: 'system',
             subject,
-            content,
+            content: { message: content },
             senderUserId,
             deliveryType,
             targetUserIds,
@@ -102,19 +122,18 @@ export class MessageSendingService {
     }
 
     /**
-     * 単一ユーザーにメッセージを送信する便利メソッド
+     * 単一ユーザーにシステムメッセージを送信する便利メソッド
      */
     async sendToUser(
         userId: string,
         subject: string,
         content: string,
         senderUserId: string,
-        type: 'system' | 'reply' = 'system',
     ): Promise<MessageSendingResult> {
         return this.sendMessage({
-            type,
+            type: 'system',
             subject,
-            content,
+            content: { message: content },
             senderUserId,
             deliveryType: 'single',
             targetUserIds: [userId],
@@ -122,19 +141,18 @@ export class MessageSendingService {
     }
 
     /**
-     * 複数ユーザーにメッセージを送信する便利メソッド
+     * 複数ユーザーにシステムメッセージを送信する便利メソッド
      */
     async sendToMultipleUsers(
         userIds: string[],
         subject: string,
         content: string,
         senderUserId: string,
-        type: 'system' | 'reply' = 'system',
     ): Promise<MessageSendingResult> {
         return this.sendMessage({
-            type,
+            type: 'system',
             subject,
-            content,
+            content: { message: content },
             senderUserId,
             deliveryType: 'multiple',
             targetUserIds: userIds,
@@ -145,9 +163,24 @@ export class MessageSendingService {
         if (!request.subject || request.subject.trim().length === 0) {
             throw new Error('件名は必須です');
         }
-        if (!request.content || request.content.trim().length === 0) {
-            throw new Error('本文は必須です');
+
+        // Validate content based on type
+        if (request.type === 'system') {
+            if (!request.content.message || request.content.message.trim().length === 0) {
+                throw new Error('本文は必須です');
+            }
+        } else if (request.type === 'reply') {
+            if (!request.content.content || request.content.content.trim().length === 0) {
+                throw new Error('本文は必須です');
+            }
+            if (!request.content.ownerThreadId || !request.content.threadId) {
+                throw new Error('スレッドIDは必須です');
+            }
+            if (!request.content.replyUserId || !request.content.replyUserName) {
+                throw new Error('返信ユーザー情報は必須です');
+            }
         }
+
         if (!request.senderUserId || request.senderUserId.trim().length === 0) {
             throw new Error('送信者IDは必須です');
         }
@@ -160,11 +193,25 @@ export class MessageSendingService {
     }
 
     private createMessage(request: MessageSendingRequest): Message {
-        const messageType = request.type === 'system' ? MessageType.system() : MessageType.ai();
         const subject = MessageSubject.create(request.subject);
-        const content = MessageContent.create(request.content);
 
-        return Message.create(messageType, subject, content, new UserId(request.senderUserId));
+        if (request.type === 'system') {
+            const messageType = MessageType.system();
+            const content = SystemMessageContent.create(request.content.message);
+            return Message.create(messageType, subject, content, new UserId(request.senderUserId));
+        } else if (request.type === 'reply') {
+            const messageType = MessageType.reply();
+            const content = ReplyMessageContent.create(
+                request.content.ownerThreadId,
+                request.content.threadId,
+                request.content.content,
+                request.content.replyUserId,
+                request.content.replyUserName,
+            );
+            return Message.create(messageType, subject, content, new UserId(request.senderUserId));
+        } else {
+            throw new Error(`Unsupported message type: ${(request as any).type}`);
+        }
     }
 
     private async getOrCreateSender(request: MessageSendingRequest): Promise<Profile> {

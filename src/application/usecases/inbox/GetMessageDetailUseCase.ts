@@ -87,7 +87,7 @@ export class GetMessageDetailUseCase {
                     id: message.getId().getValue(),
                     type: message.getType().getValue(),
                     subject: message.getSubject().getValue(),
-                    content: message.getContent().getValue(),
+                    content: JSON.stringify(message.getContent().getValue()),
                     sender: {
                         id: message.getSenderUserId().getValue(),
                         name: profile.userName.getValue(),

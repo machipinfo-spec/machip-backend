@@ -94,7 +94,7 @@ export class GetUserMessagesUseCase {
                             id: message.getId().getValue(),
                             type: message.getType().getValue(),
                             subject: message.getSubject().getValue(),
-                            content: message.getContent().getValue(),
+                            content: message.getContent().toJSON(),
                             sender: {
                                 id: message.getSenderUserId().getValue(),
                                 name: profile.userName.getValue(),

@@ -1,11 +1,12 @@
 // infrastructure/repositories/firestore/MessageRepository.ts (更新版)
 // ユーザー配信機能に対応
 
-import { Message } from '../../../../domain/entities/inbox/Message';
+import { Message, MessageContent } from '../../../../domain/entities/inbox/Message';
 import { MessageCollection } from '../../../../domain/entities/inbox/MessageCollection';
 import { IMessageRepository } from '../../../../domain/repositories/inbox/IMessageRepository';
 import { CreatedAt } from '../../../../domain/value-object/inbox/CreatedAt';
-import { MessageContent } from '../../../../domain/value-object/inbox/MessageContent';
+import { SystemMessageContent } from '../../../../domain/value-object/inbox/SystemMessageContent';
+import { ReplyMessageContent } from '../../../../domain/value-object/inbox/ReplyMessageContent';
 import { MessageId } from '../../../../domain/value-object/inbox/MessageId';
 import { MessageSubject } from '../../../../domain/value-object/inbox/MessageSubject';
 import { MessageTypeValue, MessageType } from '../../../../domain/value-object/inbox/MessageType';
@@ -37,7 +38,7 @@ export class MessageRepository implements IMessageRepository {
             messageId: message.getId().getValue(),
             type: message.getType().getValue(),
             subject: message.getSubject().getValue(),
-            content: message.getContent().getValue(),
+            content: message.getContent().toJSON(),
             senderUserId: message.getSenderUserId().getValue(),
             createdAt: message.getCreatedAt().toISOString(),
             isRead: false, // 初期値（個別の既読管理はUserMessageで行う）
@@ -404,11 +405,34 @@ export class MessageRepository implements IMessageRepository {
     }
 
     private documentToMessage(data: MessageDocument): Message {
+        const messageType =
+            data.type === 'system'
+                ? MessageType.system()
+                : data.type === 'reply'
+                ? MessageType.reply()
+                : MessageType.ai();
+
+        // Parse content based on type
+        let content: MessageContent;
+        if (data.type === 'system' || data.type === 'ai') {
+            // Try to parse as JSON first, fallback to legacy string format
+            try {
+                content = SystemMessageContent.fromJSON(data.content);
+            } catch {
+                // Legacy format: plain string
+                content = SystemMessageContent.create(data.content);
+            }
+        } else if (data.type === 'reply') {
+            content = ReplyMessageContent.fromJSON(data.content);
+        } else {
+            throw new Error(`Unknown message type: ${data.type}`);
+        }
+
         return Message.reconstruct(
             MessageId.fromExisting(data.messageId),
-            data.type === 'system' ? MessageType.system() : MessageType.ai(),
+            messageType,
             MessageSubject.create(data.subject),
-            MessageContent.create(data.content),
+            content,
             UserId.fromExisting(data.senderUserId),
             CreatedAt.fromISOString(data.createdAt),
             ReadStatus.read(), // メッセージ自体の既読管理は廃止、UserMessageで管理
