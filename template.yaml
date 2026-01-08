@@ -513,6 +513,14 @@ Resources:
                         Method: GET
                         Auth:
                             Authorizer: CognitoAuthorizer
+                DeleteInboxDetail:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /inbox/{messageId}
+                        Method: DELETE
+                        Auth:
+                            Authorizer: CognitoAuthorizer
         Metadata:
             BuildMethod: esbuild
             BuildProperties:

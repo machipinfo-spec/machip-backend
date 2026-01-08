@@ -1,6 +1,6 @@
 import { ValueObject } from '../ValueObject';
 
-export type MessageTypeValue = 'system' | 'ai';
+export type MessageTypeValue = 'system' | 'ai' | 'reply';
 
 export class MessageType extends ValueObject<MessageTypeValue> {
     protected validate(): void {
@@ -22,38 +22,8 @@ export class MessageType extends ValueObject<MessageTypeValue> {
     public static ai(): MessageType {
         return new MessageType('ai');
     }
-
-    public isSystem(): boolean {
-        return this.value === 'system';
-    }
-
-    public isAi(): boolean {
-        return this.value === 'ai';
-    }
-
-    // イミュータブルな更新メソッド（通常は型変更しないが、必要に応じて）
-    public toSystem(): MessageType {
-        return MessageType.system();
-    }
-
-    public toAi(): MessageType {
-        return MessageType.ai();
-    }
-
-    // 便利メソッド
-    public getDisplayName(): string {
-        switch (this.value) {
-            case 'system':
-                return 'System Message';
-            case 'ai':
-                return 'AI Message';
-            default:
-                return 'Unknown Message Type';
-        }
-    }
-
-    public isAutomated(): boolean {
-        return this.isSystem() || this.isAi();
+    public static reply(): MessageType {
+        return new MessageType('reply');
     }
 
     public static fromString(type: string): MessageType {
@@ -61,8 +31,10 @@ export class MessageType extends ValueObject<MessageTypeValue> {
             return MessageType.system();
         } else if (type === 'ai') {
             return MessageType.ai();
+        } else if (type === 'reply') {
+            return MessageType.reply();
         } else {
-            throw new Error(`Invalid message type: ${type}. Must be one of: system, ai`);
+            throw new Error(`Invalid message type: ${type}. Must be one of: system, ai, reply`);
         }
     }
 }

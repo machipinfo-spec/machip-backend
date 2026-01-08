@@ -16,7 +16,7 @@ import { Introduction } from '../../../domain/value-object/profile/Introduction'
 import { ProfileUrl } from '../../../domain/value-object/profile/ProfileUrl';
 
 export interface MessageSendingRequest {
-    type: 'system' | 'ai';
+    type: 'system' | 'reply';
     subject: string;
     content: string;
     senderUserId: string;
@@ -102,27 +102,6 @@ export class MessageSendingService {
     }
 
     /**
-     * AIメッセージを送信する便利メソッド
-     */
-    async sendAIMessage(
-        subject: string,
-        content: string,
-        senderUserId: string,
-        deliveryType: 'single' | 'multiple' | 'all',
-        targetUserIds?: string[],
-        senderAvatar?: string,
-    ): Promise<MessageSendingResult> {
-        return this.sendMessage({
-            type: 'ai',
-            subject,
-            content,
-            senderUserId,
-            deliveryType,
-            targetUserIds,
-        });
-    }
-
-    /**
      * 単一ユーザーにメッセージを送信する便利メソッド
      */
     async sendToUser(
@@ -130,7 +109,7 @@ export class MessageSendingService {
         subject: string,
         content: string,
         senderUserId: string,
-        type: 'system' | 'ai' = 'system',
+        type: 'system' | 'reply' = 'system',
     ): Promise<MessageSendingResult> {
         return this.sendMessage({
             type,
@@ -150,7 +129,7 @@ export class MessageSendingService {
         subject: string,
         content: string,
         senderUserId: string,
-        type: 'system' | 'ai' = 'system',
+        type: 'system' | 'reply' = 'system',
     ): Promise<MessageSendingResult> {
         return this.sendMessage({
             type,

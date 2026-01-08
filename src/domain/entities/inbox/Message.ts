@@ -211,14 +211,6 @@ export class Message implements DTOMapper<Message, MessageDTO> {
         return this.readStatus.isUnread();
     }
 
-    public isSystemMessage(): boolean {
-        return this.type.isSystem();
-    }
-
-    public isAIMessage(): boolean {
-        return this.type.isAi();
-    }
-
     public getContentPreview(maxLength = Message.CONTENT_PREVIEW_LENGTH): string {
         return this.content.getPreview(maxLength);
     }

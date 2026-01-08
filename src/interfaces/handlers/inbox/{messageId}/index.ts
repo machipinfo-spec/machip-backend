@@ -1,10 +1,11 @@
 import { APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda';
 import { handler as getHandler } from './get';
+import { handler as deleteHandler } from './delete';
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-    'Access-Control-Allow-Methods': 'GET,PUT,OPTIONS',
+    'Access-Control-Allow-Methods': 'GET,DELETE,PUT,OPTIONS',
     'Content-Type': 'application/json',
 };
 
@@ -24,6 +25,8 @@ export const lambdaHandler: APIGatewayProxyHandler = async (event): Promise<APIG
         switch (event.httpMethod) {
             case 'GET':
                 return await getHandler(event);
+            case 'DELETE':
+                return await deleteHandler(event);
             default:
                 return {
                     statusCode: 405,
@@ -32,7 +35,7 @@ export const lambdaHandler: APIGatewayProxyHandler = async (event): Promise<APIG
                 };
         }
     } catch (error: any) {
-        console.error('Error in mapHandler:', error);
+        console.error('Error in inboxHandler:', error);
         return {
             statusCode: 500,
             headers: corsHeaders,

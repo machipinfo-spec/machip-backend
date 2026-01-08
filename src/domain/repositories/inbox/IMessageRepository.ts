@@ -75,11 +75,6 @@ export interface IMessageRepository {
     count(): Promise<number>;
 
     /**
-     * タイプ別メッセージ数をカウントする
-     */
-    countByType(): Promise<Record<MessageTypeValue, number>>;
-
-    /**
      * 指定した日付より古いメッセージを削除する
      */
     deleteOlderThan(date: Date): Promise<number>;

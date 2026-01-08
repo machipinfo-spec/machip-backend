@@ -294,28 +294,6 @@ export class MessageRepository implements IMessageRepository {
         return snapshot.size;
     }
 
-    async countByType(): Promise<Record<MessageTypeValue, number>> {
-        this.logger.debug('DBからタイプ別メッセージ数を取得');
-        const { db } = await getDbAndAuth();
-        const snapshot = await db.collection(this.tableName).get();
-
-        const counts: Record<MessageTypeValue, number> = {
-            system: 0,
-            ai: 0,
-        };
-
-        snapshot.forEach((doc) => {
-            const data = doc.data() as MessageDocument;
-            const type = data.type;
-
-            if (type in counts) {
-                counts[type]++;
-            }
-        });
-
-        return counts;
-    }
-
     async deleteOlderThan(date: Date): Promise<number> {
         const isoString = date.toISOString();
         this.logger.debug(`古いメッセージ削除: ${isoString}より前`);

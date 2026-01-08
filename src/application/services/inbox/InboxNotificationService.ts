@@ -17,7 +17,7 @@ export class InboxNotificationService {
     async notifyNewMessage(data: {
         userId: string;
         messageId: string;
-        messageType: 'system' | 'ai';
+        messageType: 'system' | 'reply';
         subject: string;
         senderName: string;
     }): Promise<void> {

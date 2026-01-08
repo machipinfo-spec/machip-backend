@@ -146,15 +146,15 @@ export class ThreadCreateUseCase {
                 const threadId = ThreadId.fromExisting(thread.toPrimitives().id);
                 const updatedParent = parent.addChildThread(threadId);
                 await this.threadRepository.save(updatedParent);
+                await this.messageSendingService.sendMessage({
+                    type: 'reply',
+                    subject: '返信があります',
+                    content: `返信がつきました: ${threadName}`,
+                    senderUserId: UserId.SYSTEM_ID.getValue(),
+                    deliveryType: 'single',
+                    targetUserIds: [parent.getOwnerUserId().getValue()],
+                });
             }
-            await this.messageSendingService.sendMessage({
-                type: 'system',
-                subject: 'リプライがつきました',
-                content: `A new thread has been created: ${threadName}`,
-                senderUserId: UserId.SYSTEM_ID.getValue(),
-                deliveryType: 'single',
-                targetUserIds: [ownerUserId],
-            });
         }
         const threadItem = await this.convertToThreadItem(thread);
 

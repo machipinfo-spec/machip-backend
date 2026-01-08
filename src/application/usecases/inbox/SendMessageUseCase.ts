@@ -2,7 +2,7 @@ import { Logger } from '../../../shared/logger';
 import { MessageSendingService } from '../../services/inbox/MessageSendingService';
 
 export interface SendMessageRequest {
-    type: 'system' | 'ai';
+    type: 'system' | 'reply';
     subject: string;
     content: string;
     senderUserId: string;

@@ -40,7 +40,7 @@ export class Thread {
             null,
             imageUrl,
             selectDate,
-            address
+            address,
         );
     }
 
@@ -64,7 +64,7 @@ export class Thread {
             mapPointInfoId,
             imageUrl,
             selectDate,
-            address
+            address,
         );
     }
 
@@ -92,15 +92,13 @@ export class Thread {
             mapPointInfoId,
             imageUrl,
             selectDate,
-            address
+            address,
         );
     }
 
     public addChildThread(childThreadId: ThreadId): Thread {
         // 既に存在する場合は追加しない
-        const exists = this.childThreadIds.some(
-            id => id.getValue() === childThreadId.getValue()
-        );
+        const exists = this.childThreadIds.some((id) => id.getValue() === childThreadId.getValue());
         if (exists) {
             return this;
         }
@@ -116,14 +114,12 @@ export class Thread {
             this.mapPointInfoId,
             this.imageUrl,
             this.selectDate,
-            this.address
+            this.address,
         );
     }
 
     public removeChildThread(childThreadId: ThreadId): Thread {
-        const filteredChildren = this.childThreadIds.filter(
-            id => id.getValue() !== childThreadId.getValue()
-        );
+        const filteredChildren = this.childThreadIds.filter((id) => id.getValue() !== childThreadId.getValue());
 
         return new Thread(
             this.id,
@@ -136,7 +132,7 @@ export class Thread {
             this.mapPointInfoId,
             this.imageUrl,
             this.selectDate,
-            this.address
+            this.address,
         );
     }
 
@@ -160,6 +156,10 @@ export class Thread {
         return this.imageUrl;
     }
 
+    public getOwnerUserId(): UserId {
+        return this.ownerUserId;
+    }
+
     public toPrimitives(): ThreadDTO {
         return {
             id: this.id.getValue(),
@@ -168,7 +168,7 @@ export class Thread {
             deleatedAt: this.deleatedAt,
             ownerUserId: this.ownerUserId.getValue(),
             parentThreadId: this.parentThreadId?.getValue() || null,
-            childThreadIds: this.childThreadIds.map(id => id.getValue()),
+            childThreadIds: this.childThreadIds.map((id) => id.getValue()),
             mapPointInfoId: this.mapPointInfoId ? this.mapPointInfoId.getValue() : null,
             imageUrl: this.imageUrl,
             selectDate: this.selectDate,
