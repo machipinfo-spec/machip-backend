@@ -8,8 +8,9 @@ import { ReadStatus } from '../../value-object/inbox/ReadStatus';
 import { ValidationError } from '../DomainError';
 import { DTOMapper } from '../DTOMapper';
 import { UserId } from '../../value-object/users/UserId';
+import { NewEventMessageContent } from '../../value-object/inbox/NewEventMessageContent';
 
-export type MessageContent = SystemMessageContent | ReplyMessageContent;
+export type MessageContent = SystemMessageContent | ReplyMessageContent | NewEventMessageContent;
 
 export interface MessageDTO {
     messageId: string;
@@ -92,6 +93,9 @@ export class Message implements DTOMapper<Message, MessageDTO> {
         if (this.type.getValue() === 'reply' && !(this.content instanceof ReplyMessageContent)) {
             throw new ValidationError('Reply message must have ReplyMessageContent', 'content');
         }
+        if (this.type.getValue() === 'newEvent' && !(this.content instanceof NewEventMessageContent)) {
+            throw new ValidationError('New event message must have NewEventMessageContent', 'content');
+        }
     }
 
     // ファクトリメソッド
@@ -149,6 +153,8 @@ export class Message implements DTOMapper<Message, MessageDTO> {
                 }
             } else if (dto.type === 'reply') {
                 content = ReplyMessageContent.fromJSON(dto.content);
+            } else if (dto.type === 'newEvent') {
+                content = NewEventMessageContent.fromJSON(dto.content);
             } else {
                 throw new ValidationError(`Unknown message type: ${dto.type}`, 'type');
             }
@@ -232,10 +238,6 @@ export class Message implements DTOMapper<Message, MessageDTO> {
         return this.readStatus.isUnread();
     }
 
-    public getContentPreview(maxLength = Message.CONTENT_PREVIEW_LENGTH): string {
-        return this.content.getPreview(maxLength);
-    }
-
     public isSameType(type: MessageType): boolean {
         return this.type.equals(type);
     }
@@ -254,15 +256,13 @@ export class Message implements DTOMapper<Message, MessageDTO> {
         return diffInHours <= hoursThreshold;
     }
 
-    public hasLongContent(): boolean {
-        return this.content.getCharacterCount() > Message.CONTENT_PREVIEW_LENGTH * 2;
-    }
-
     public isEmpty(): boolean {
         if (this.content instanceof SystemMessageContent) {
             return this.subject.getValue().trim() === '' && this.content.getMessage().trim() === '';
         } else if (this.content instanceof ReplyMessageContent) {
             return this.subject.getValue().trim() === '' && this.content.getContent().trim() === '';
+        } else if (this.content instanceof NewEventMessageContent) {
+            return false;
         }
         return false;
     }
@@ -281,5 +281,9 @@ export class Message implements DTOMapper<Message, MessageDTO> {
 
     public isReplyMessage(): this is Message & { content: ReplyMessageContent } {
         return this.content instanceof ReplyMessageContent;
+    }
+
+    public isNewEventMessage(): this is Message & { content: NewEventMessageContent } {
+        return this.content instanceof NewEventMessageContent;
     }
 }

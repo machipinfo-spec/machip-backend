@@ -41,8 +41,8 @@ export interface ThreadCreateResponse {
 
 export class ThreadCreateUseCase {
     constructor(
-        private threadRepository: IThreadRepository,
-        private profileRepository: IProfileRepository,
+        private readonly threadRepository: IThreadRepository,
+        private readonly profileRepository: IProfileRepository,
         private readonly messageSendingService: MessageSendingService,
     ) {}
     private async convertToThreadItem(thread: Thread): Promise<ThreadItem> {

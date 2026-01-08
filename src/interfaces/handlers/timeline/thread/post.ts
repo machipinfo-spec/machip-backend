@@ -29,9 +29,6 @@ const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
 
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'your-bucket-name';
-const s3 = new S3Client({ region: process.env.AWS_REGION || 'ap-northeast-1' });
-
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': '*',
