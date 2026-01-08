@@ -6,10 +6,25 @@ import { HandlerUtil } from '../../util';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
 import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
 import { ProfileRepository } from '../../../../infrastructure/firebase/persistence/profile/ProfileRepository';
+import { MessageSendingService } from '../../../../application/services/inbox/MessageSendingService';
+import { MessageBroadcastRepository } from '../../../../infrastructure/firebase/persistence/inbox/MessageBroadcastRepository';
+import { MessageRepository } from '../../../../infrastructure/firebase/persistence/inbox/MessageRepository';
+import { UserMessageRepository } from '../../../../infrastructure/firebase/persistence/inbox/UserMessageRepository';
+import { Logger } from '../../../../shared/logger';
 
 const profileRepository = new ProfileRepository();
 const threadRepository = new ThreadRepository();
-const useCase = new ThreadCreateUseCase(threadRepository, profileRepository);
+const messageRepository = new MessageRepository();
+const userMessageRepository = new UserMessageRepository();
+const messageBroadcastRepository = new MessageBroadcastRepository();
+const messageSendingService = new MessageSendingService(
+    profileRepository,
+    messageRepository,
+    userMessageRepository,
+    messageBroadcastRepository,
+    new Logger('MessageSendingService'),
+);
+const threadCreateUseCase = new ThreadCreateUseCase(threadRepository, profileRepository, messageSendingService);
 const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
@@ -106,7 +121,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             }
         }
 
-        const threadResponse = await useCase.execute(
+        const threadResponse = await threadCreateUseCase.execute(
             threadName,
             userId,
             parentThreadId || null,

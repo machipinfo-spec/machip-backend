@@ -124,9 +124,9 @@ Resources:
             MemorySize: 512
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
-                      ParameterName: '/tetra/firebase/*'
+                    ParameterName: '/tetra/firebase/*'
                 - S3CrudPolicy:
-                      BucketName: !Ref ImageBucket
+                    BucketName: !Ref ImageBucket
                 - Statement:
                     - Effect: Allow
                       Action:
@@ -178,11 +178,11 @@ Resources:
             MemorySize: 512
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
-                      ParameterName: '/tetra/firebase/*'
+                    ParameterName: '/tetra/firebase/*'
                 - SSMParameterWithSlashPrefixReadPolicy:
-                      ParameterName: '/tetra/google/*'
+                    ParameterName: '/tetra/google/*'
                 - S3CrudPolicy:
-                      BucketName: !Ref ImageBucket
+                    BucketName: !Ref ImageBucket
             Architectures:
                 - x86_64
             Events:
@@ -371,6 +371,189 @@ Resources:
                         Method: GET
                         Auth:
                             Authorizer: NONE
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
+        
+    # inbox
+    InboxSummaryFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/inbox/summary
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                    ParameterName: '/tetra/firebase/*'
+                - S3CrudPolicy:
+                    BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                GetInboxSummary:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /inbox/summary
+                        Method: GET
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+                PutInboxSummary:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /inbox/summary
+                        Method: PUT
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
+
+
+    InboxFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/inbox/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                    ParameterName: '/tetra/firebase/*'
+                - S3CrudPolicy:
+                    BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                GetInbox:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /inbox
+                        Method: GET
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
+
+    InboxReadAllFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/inbox/read-all/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                    ParameterName: '/tetra/firebase/*'
+                - S3CrudPolicy:
+                    BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                PutInboxReadAll:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /inbox/read-all
+                        Method: PUT
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
+
+    InboxDetailFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/inbox/{messageId}/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                    ParameterName: '/tetra/firebase/*'
+                - S3CrudPolicy:
+                    BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                GetInboxDetail:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /inbox/{messageId}
+                        Method: GET
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+                DeleteInboxDetail:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /inbox/{messageId}
+                        Method: DELETE
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
+
+    InboxReadFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/inbox/{messageId}/read/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                    ParameterName: '/tetra/firebase/*'
+                - S3CrudPolicy:
+                    BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                PutInboxRead:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /inbox/{messageId}/read
+                        Method: PUT
+                        Auth:
+                            Authorizer: CognitoAuthorizer
         Metadata:
             BuildMethod: esbuild
             BuildProperties:

@@ -22,4 +22,11 @@ export class UserId extends ValueObject<string> {
     public static create(): UserId {
         return new UserId(uuidv4());
     }
+
+    // システムユーザーID (固定値: UUID v4形式)
+    public static readonly SYSTEM_ID = new UserId('a785ce49-0d19-49f0-a933-5b1a77ec7066');
+
+    public isSystem(): boolean {
+        return this.equals(UserId.SYSTEM_ID);
+    }
 }
