@@ -8,4 +8,5 @@ export interface IUserRepository {
     update(user: User): Promise<void>;
     findByAuthId(authId: AuthId): Promise<User | null>;
     findByUserId(userId: UserId): Promise<User | null>;
+    findAll(): Promise<User[]>;
 }

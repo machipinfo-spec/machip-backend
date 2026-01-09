@@ -19,7 +19,7 @@ interface MessageBroadcastDocument {
     status: BroadcastStatusValue;
     deliveredCount: number;
     failedCount: number;
-    completedAt?: string;
+    completedAt?: string | null;
     // 非正規化データ（検索・表示用）
     messageSubject: string;
     messageType: string;
@@ -56,7 +56,7 @@ export class MessageBroadcastRepository implements IMessageBroadcastRepository {
             status: broadcast.getStatus().getValue(),
             deliveredCount: broadcast.getDeliveredCount(),
             failedCount: broadcast.getFailedCount(),
-            completedAt: broadcast.getCompletedAt()?.toISOString(),
+            completedAt: broadcast.getCompletedAt()?.toISOString() || null,
             // 非正規化データ
             messageSubject: messageData?.subject || '',
             messageType: messageData?.type || 'ai',

@@ -6,6 +6,8 @@ import { GeoLocation } from '../../../domain/value-object/map/geoLocation';
 import { PointInfoId } from '../../../domain/value-object/map/pointInfoId';
 import { ThreadName } from '../../../domain/value-object/map/threadName';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { MessageSendingService } from '../../services/inbox/MessageSendingService';
+import { UserId } from '../../../domain/value-object/users/UserId';
 
 // ====== S3 クライアント ======
 const s3 = new S3Client({ region: process.env.AWS_REGION || 'ap-northeast-1' });
@@ -17,6 +19,7 @@ export class CreatePointInfoUseCase {
     constructor(
         private readonly mapRepository: IMapRepository,
         private readonly reverseGeocodingRepository: IReverseGeocodingRepository,
+        private readonly messageSendingService: MessageSendingService,
     ) {}
 
     async execute(input: CreatePointInfoUseCaseRequest): Promise<CreatePointInfoUseCaseResponse> {
@@ -74,6 +77,22 @@ export class CreatePointInfoUseCase {
 
         await this.mapRepository.save(pointInfo);
 
+        // 通知を送る
+        await this.messageSendingService.sendMessage({
+            type: 'newEvent',
+            subject: '新しいイベントが登録されました',
+            // NewEventMessageRequest
+            content: {
+                pointInfoId: pointInfoId.getValue(),
+                ownerUserId: input.userId,
+                address: address || '',
+                title: threadName.getValue(),
+                date: selectDate,
+            },
+            senderUserId: UserId.SYSTEM_ID.getValue(),
+            deliveryType: 'all',
+        });
+
         return {
             pointInfo,
         };
@@ -87,6 +106,7 @@ export interface CreatePointInfoUseCaseRequest {
     category: string;
     selectDate: Date | null;
     imageBuffer: Buffer | null;
+    userId: string;
 }
 
 // export interface CreatePointInfoUseCaseResponse {

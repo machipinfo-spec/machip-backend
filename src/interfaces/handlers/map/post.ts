@@ -16,23 +16,24 @@ import { UserMessageRepository } from '../../../infrastructure/firebase/persiste
 import { Logger } from '../../../shared/logger';
 const reverseGeocodingRepository = new ReverseGeocodingRepository();
 const mapRepository = new MapRepository();
-const useCase = new CreatePointInfoUseCase(mapRepository, reverseGeocodingRepository);
 const threadRepository = new ThreadRepository();
 const profileRepository = new ProfileRepository();
 const messageRepository = new MessageRepository();
 const userMessageRepository = new UserMessageRepository();
 const messageBroadcastRepository = new MessageBroadcastRepository();
+const userRepository = new UserRepository();
 const messageSendingService = new MessageSendingService(
     profileRepository,
     messageRepository,
     userMessageRepository,
     messageBroadcastRepository,
+    userRepository,
     new Logger('MessageSendingService'),
 );
 const threadCreateUseCase = new ThreadCreateUseCase(threadRepository, profileRepository, messageSendingService);
-const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
+const useCase = new CreatePointInfoUseCase(mapRepository, reverseGeocodingRepository, messageSendingService);
 
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'your-bucket-name';
 const s3 = new S3Client({ region: process.env.AWS_REGION || 'ap-northeast-1' });
@@ -137,6 +138,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             category,
             selectDate: selectDate,
             imageBuffer: imageBytes || null,
+            userId: user.userId.getValue(),
         });
         if (pointCreateResponse.error || !pointCreateResponse.pointInfo) {
             return {

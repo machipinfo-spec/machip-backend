@@ -1,5 +1,6 @@
 import { IMessageRepository } from '../../../domain/repositories/inbox/IMessageRepository';
 import { IUserMessageRepository } from '../../../domain/repositories/inbox/IUserMessageRepository';
+import { IUserRepository } from '../../../domain/repositories/user/IUserRepository';
 import { IMessageBroadcastRepository } from '../../../domain/repositories/inbox/IMessageBroadcastRepository';
 import { Message } from '../../../domain/entities/inbox/Message';
 import { MessageDeliveryService } from '../../../domain/services/inbox/MessageDeliveryService';
@@ -15,6 +16,7 @@ import { UserName } from '../../../domain/value-object/users/UserName';
 import { ImageUrl } from '../../../domain/value-object/users/ImageUrl';
 import { Introduction } from '../../../domain/value-object/profile/Introduction';
 import { ProfileUrl } from '../../../domain/value-object/profile/ProfileUrl';
+import { NewEventMessageContent } from '../../../domain/value-object/inbox/NewEventMessageContent';
 
 export interface SystemMessageRequest {
     type: 'system';
@@ -42,7 +44,22 @@ export interface ReplyMessageRequest {
     targetUserIds?: string[];
 }
 
-export type MessageSendingRequest = SystemMessageRequest | ReplyMessageRequest;
+export interface NewEventMessageRequest {
+    type: 'newEvent';
+    subject: string;
+    content: {
+        pointInfoId: string;
+        ownerUserId: string;
+        address: string;
+        title: string;
+        date: Date | null;
+    };
+    senderUserId: string;
+    deliveryType: 'single' | 'multiple' | 'all';
+    targetUserIds?: string[];
+}
+
+export type MessageSendingRequest = SystemMessageRequest | ReplyMessageRequest | NewEventMessageRequest;
 
 export interface MessageSendingResult {
     messageId: string;
@@ -58,6 +75,7 @@ export class MessageSendingService {
         private readonly messageRepository: IMessageRepository,
         private readonly userMessageRepository: IUserMessageRepository,
         private readonly messageBroadcastRepository: IMessageBroadcastRepository,
+        private readonly userRepository: IUserRepository,
         private readonly logger: Logger,
     ) {}
 
@@ -107,7 +125,6 @@ export class MessageSendingService {
     async sendSystemMessage(
         subject: string,
         content: string,
-        senderUserId: string,
         deliveryType: 'single' | 'multiple' | 'all',
         targetUserIds?: string[],
     ): Promise<MessageSendingResult> {
@@ -115,7 +132,7 @@ export class MessageSendingService {
             type: 'system',
             subject,
             content: { message: content },
-            senderUserId,
+            senderUserId: UserId.SYSTEM_ID.getValue(),
             deliveryType,
             targetUserIds,
         });
@@ -143,17 +160,12 @@ export class MessageSendingService {
     /**
      * 複数ユーザーにシステムメッセージを送信する便利メソッド
      */
-    async sendToMultipleUsers(
-        userIds: string[],
-        subject: string,
-        content: string,
-        senderUserId: string,
-    ): Promise<MessageSendingResult> {
+    async sendToMultipleUsers(userIds: string[], subject: string, content: string): Promise<MessageSendingResult> {
         return this.sendMessage({
             type: 'system',
             subject,
             content: { message: content },
-            senderUserId,
+            senderUserId: UserId.SYSTEM_ID.getValue(),
             deliveryType: 'multiple',
             targetUserIds: userIds,
         });
@@ -178,6 +190,13 @@ export class MessageSendingService {
             }
             if (!request.content.replyUserId || !request.content.replyUserName) {
                 throw new Error('返信ユーザー情報は必須です');
+            }
+        } else if (request.type === 'newEvent') {
+            if (!request.content.pointInfoId || !request.content.ownerUserId) {
+                throw new Error('ポイント情報は必須です');
+            }
+            if (!request.content.address) {
+                throw new Error('住所は必須です');
             }
         }
 
@@ -207,6 +226,16 @@ export class MessageSendingService {
                 request.content.content,
                 request.content.replyUserId,
                 request.content.replyUserName,
+            );
+            return Message.create(messageType, subject, content, new UserId(request.senderUserId));
+        } else if (request.type === 'newEvent') {
+            const messageType = MessageType.newEvent();
+            const content = NewEventMessageContent.create(
+                request.content.pointInfoId,
+                request.content.ownerUserId,
+                request.content.address,
+                request.content.title,
+                request.content.date,
             );
             return Message.create(messageType, subject, content, new UserId(request.senderUserId));
         } else {
@@ -246,7 +275,9 @@ export class MessageSendingService {
                 return this.deliverToMultipleUsers(message, request.targetUserIds!);
 
             case 'all':
-                throw new Error('全ユーザー配信は未実装です。ユーザー管理機能との連携が必要です。');
+                const allUsers = await this.userRepository.findAll();
+                const allUserIds = allUsers.map((user) => user.userId.getValue());
+                return this.deliverToMultipleUsers(message, allUserIds);
 
             default:
                 throw new Error(`未対応の配信タイプ: ${request.deliveryType}`);

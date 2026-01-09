@@ -7,6 +7,7 @@ import { IMessageRepository } from '../../../../domain/repositories/inbox/IMessa
 import { CreatedAt } from '../../../../domain/value-object/inbox/CreatedAt';
 import { SystemMessageContent } from '../../../../domain/value-object/inbox/SystemMessageContent';
 import { ReplyMessageContent } from '../../../../domain/value-object/inbox/ReplyMessageContent';
+import { NewEventMessageContent } from '../../../../domain/value-object/inbox/NewEventMessageContent';
 import { MessageId } from '../../../../domain/value-object/inbox/MessageId';
 import { MessageSubject } from '../../../../domain/value-object/inbox/MessageSubject';
 import { MessageTypeValue, MessageType } from '../../../../domain/value-object/inbox/MessageType';
@@ -410,6 +411,8 @@ export class MessageRepository implements IMessageRepository {
                 ? MessageType.system()
                 : data.type === 'reply'
                 ? MessageType.reply()
+                : data.type === 'newEvent'
+                ? MessageType.newEvent()
                 : MessageType.ai();
 
         // Parse content based on type
@@ -424,6 +427,8 @@ export class MessageRepository implements IMessageRepository {
             }
         } else if (data.type === 'reply') {
             content = ReplyMessageContent.fromJSON(data.content);
+        } else if (data.type === 'newEvent') {
+            content = NewEventMessageContent.fromJSON(data.content);
         } else {
             throw new Error(`Unknown message type: ${data.type}`);
         }
