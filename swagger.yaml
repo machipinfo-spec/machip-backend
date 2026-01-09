@@ -1,0 +1,580 @@
+openapi: 3.0.0
+info:
+  title: Tetra Backend API
+  description: API for Tetra Backend
+  version: 1.0.0
+
+servers:
+  - url: https://${TetraApiEndpoint}
+    description: Production API Endpoint
+
+components:
+  securitySchemes:
+    CognitoAuthorizer:
+      type: nodejs22.x # AWS Lambda Authorizer in implementation, but for swagger UI often uses Bearer
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Cognito ID Token (Bearer <token>)
+
+  schemas:
+    User:
+      type: object
+      properties:
+        authId:
+          type: string
+        userId:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+    
+    PointInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        threadName:
+          type: string
+        category:
+          type: string
+        threadId:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+        selectDate:
+          type: string
+          format: date-time
+          nullable: true
+
+    Thread:
+      type: object
+      properties:
+        id:
+          type: string
+        threadName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        ownerUserId:
+          type: string
+        parentThreadId:
+          type: string
+          nullable: true
+        childThreadIds:
+          type: array
+          items:
+            type: string
+        imageUrl:
+          type: string
+          nullable: true
+
+    Profile:
+      type: object
+      properties:
+        profileId:
+          type: string
+        userId:
+          type: string
+        userName:
+          type: string
+        imageUrl:
+          type: string
+        introduction:
+          type: string
+        url:
+          type: string
+          nullable: true
+
+    Message:
+      type: object
+      # Generic message structure approximation
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [system, reply, ai, newEvent]
+        subject:
+          type: string
+        content:
+          type: object # Polymorphic content
+        senderId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+security:
+  - CognitoAuthorizer: []
+
+paths:
+  /user:
+    get:
+      summary: Get User Info
+      security:
+        - CognitoAuthorizer: []
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '403':
+          description: Forbidden - User not found in DB (even if authenticated)
+        '401':
+          description: Unauthorized
+
+    post:
+      summary: Create User
+      security:
+        - CognitoAuthorizer: []
+      description: Creates a user based on Cognito claims (email, username).
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Bad Request (Missing claims)
+
+    delete:
+      summary: Delete User
+      security:
+        - CognitoAuthorizer: []
+      responses:
+        '200':
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /user/profile:
+    post:
+      summary: Create Profile
+      security:
+        - CognitoAuthorizer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userName, imageBase64, introduction]
+              properties:
+                userName:
+                  type: string
+                imageBase64:
+                  type: string
+                introduction:
+                  type: string
+                url:
+                  type: string
+                  nullable: true
+      responses:
+        '201':
+          description: Profile created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+
+    put:
+      summary: Update Profile
+      security:
+        - CognitoAuthorizer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userName:
+                  type: string
+                imageBase64:
+                  type: string
+                introduction:
+                  type: string
+                url:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+
+  /user/profile/{userId}:
+    get:
+      summary: Get Profile
+      security: [] # Public access allowed? Handler check says auth needed for @self
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+          description: User ID or '@self'
+      responses:
+        '200':
+          description: Profile found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '404':
+          description: Profile not found
+
+  /map:
+    get:
+      summary: Get Point Info List
+      security: [] # handlerUtil.getAuthId is called but Optional? "if (authId) { ... }"
+      parameters:
+        - in: query
+          name: threadName
+          schema:
+            type: string
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of points
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PointInfo'
+
+    post:
+      summary: Create Point Info
+      security:
+        - CognitoAuthorizer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lat, lng, threadName, category]
+              properties:
+                lat:
+                  type: number
+                lng:
+                  type: number
+                threadName:
+                  type: string
+                category:
+                  type: string
+                imageBase64:
+                  type: string
+                selectedDate:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Point created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointInfo'
+
+  /timeline:
+    get:
+      summary: Get Timeline (Thread List)
+      security: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of threads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Thread'
+
+  /timeline/thread:
+    get:
+      summary: Get Thread or Thread List by Owner
+      security: []
+      parameters:
+        - in: query
+          name: threadId
+          schema:
+            type: string
+        - in: query
+          name: ownerUserId
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: includeChildren
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Thread object or List of threads
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Thread'
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/Thread'
+
+    post:
+      summary: Create Thread
+      security:
+        - CognitoAuthorizer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [threadName]
+              properties:
+                threadName:
+                  type: string
+                parentThreadId:
+                  type: string
+                imageBase64:
+                  type: string
+      responses:
+        '201':
+          description: Thread created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thread'
+
+    delete:
+      summary: Delete Thread
+      security:
+        - CognitoAuthorizer: []
+      parameters:
+        - in: query
+          name: threadId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: deleteChildren
+          schema:
+            type: boolean
+            default: true
+        - in: query
+          name: soft
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Thread deleted success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /inbox:
+    get:
+      summary: Get User Messages
+      security:
+        - CognitoAuthorizer: []
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+        - in: query
+          name: isRead
+          schema:
+            type: boolean
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User messages
+          content:
+            application/json:
+              schema:
+                type: object # Define more strictly if needed
+                properties:
+                    items:
+                        type: array
+                        items:
+                            $ref: '#/components/schemas/Message'
+                    count:
+                        type: number
+
+  /inbox/summary:
+    get:
+      summary: Get Inbox Summary
+      security:
+        - CognitoAuthorizer: []
+      responses:
+        '200':
+          description: Summary info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                    unreadCount:
+                        type: integer
+
+    put:
+      summary: Mark All As Read (Alias)
+      security:
+        - CognitoAuthorizer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  default: all
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                 type: object
+                 properties:
+                    success:
+                        type: boolean
+
+  /inbox/read-all:
+    put:
+      summary: Mark All As Read
+      security:
+        - CognitoAuthorizer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  default: all
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                 type: object
+                 properties:
+                    success:
+                        type: boolean
+  
+  /inbox/{messageId}:
+    get:
+      summary: Get Message Detail
+      security:
+         - CognitoAuthorizer: []
+      parameters:
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Message detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '404':
+            description: Not found
+
+    delete:
+       summary: Delete User Message
+       security:
+         - CognitoAuthorizer: []
+       parameters:
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+       responses:
+         '200':
+           description: Deleted
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   success:
+                     type: boolean
+
+  /inbox/{messageId}/read:
+    put:
+       summary: Mark Message As Read
+       security:
+         - CognitoAuthorizer: []
+       parameters:
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+       responses:
+         '200':
+           description: Updated
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   success:
+                     type: boolean

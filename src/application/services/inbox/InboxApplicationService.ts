@@ -37,6 +37,7 @@ import {
 } from '../../usecases/inbox/MarkMessageAsReadUseCase';
 import { SendMessageUseCase, SendMessageRequest, SendMessageResponse } from '../../usecases/inbox/SendMessageUseCase';
 import { MessageSendingService } from './MessageSendingService';
+import { UserRepository } from '../../../infrastructure/firebase/persistence/user/UserRepository';
 
 /**
  * インボックス機能のアプリケーションサービス
@@ -67,6 +68,7 @@ export class InboxApplicationService {
             messageRepository,
             userMessageRepository,
             messageBroadcastRepository,
+            new UserRepository(),
             this.logger,
         );
 

@@ -86,6 +86,8 @@ export class CreatePointInfoUseCase {
                 pointInfoId: pointInfoId.getValue(),
                 ownerUserId: input.userId,
                 address: address || '',
+                title: threadName.getValue(),
+                date: selectDate,
             },
             senderUserId: UserId.SYSTEM_ID.getValue(),
             deliveryType: 'all',

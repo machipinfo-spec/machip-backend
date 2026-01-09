@@ -4,6 +4,8 @@ export interface NewEventMessageData {
     pointInfoId: string;
     ownerUserId: string;
     address: string;
+    title: string;
+    date: Date | null;
 }
 
 export class NewEventMessageContent extends ValueObject<NewEventMessageData> {
@@ -24,11 +26,19 @@ export class NewEventMessageContent extends ValueObject<NewEventMessageData> {
         Object.freeze(this);
     }
 
-    public static create(pointInfoId: string, ownerUserId: string, address: string): NewEventMessageContent {
+    public static create(
+        pointInfoId: string,
+        ownerUserId: string,
+        address: string,
+        title: string,
+        date: Date | null,
+    ): NewEventMessageContent {
         return new NewEventMessageContent({
             pointInfoId,
             ownerUserId,
             address,
+            title,
+            date,
         });
     }
 
@@ -59,5 +69,9 @@ export class NewEventMessageContent extends ValueObject<NewEventMessageData> {
 
     public getAddress(): string {
         return this.value.address;
+    }
+
+    public getTitle(): string {
+        return this.value.title;
     }
 }

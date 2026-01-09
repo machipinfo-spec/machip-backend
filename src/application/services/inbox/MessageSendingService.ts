@@ -1,5 +1,6 @@
 import { IMessageRepository } from '../../../domain/repositories/inbox/IMessageRepository';
 import { IUserMessageRepository } from '../../../domain/repositories/inbox/IUserMessageRepository';
+import { IUserRepository } from '../../../domain/repositories/user/IUserRepository';
 import { IMessageBroadcastRepository } from '../../../domain/repositories/inbox/IMessageBroadcastRepository';
 import { Message } from '../../../domain/entities/inbox/Message';
 import { MessageDeliveryService } from '../../../domain/services/inbox/MessageDeliveryService';
@@ -50,6 +51,8 @@ export interface NewEventMessageRequest {
         pointInfoId: string;
         ownerUserId: string;
         address: string;
+        title: string;
+        date: Date | null;
     };
     senderUserId: string;
     deliveryType: 'single' | 'multiple' | 'all';
@@ -72,6 +75,7 @@ export class MessageSendingService {
         private readonly messageRepository: IMessageRepository,
         private readonly userMessageRepository: IUserMessageRepository,
         private readonly messageBroadcastRepository: IMessageBroadcastRepository,
+        private readonly userRepository: IUserRepository,
         private readonly logger: Logger,
     ) {}
 
@@ -230,6 +234,8 @@ export class MessageSendingService {
                 request.content.pointInfoId,
                 request.content.ownerUserId,
                 request.content.address,
+                request.content.title,
+                request.content.date,
             );
             return Message.create(messageType, subject, content, new UserId(request.senderUserId));
         } else {
@@ -269,7 +275,9 @@ export class MessageSendingService {
                 return this.deliverToMultipleUsers(message, request.targetUserIds!);
 
             case 'all':
-                throw new Error('全ユーザー配信は未実装です。ユーザー管理機能との連携が必要です。');
+                const allUsers = await this.userRepository.findAll();
+                const allUserIds = allUsers.map((user) => user.userId.getValue());
+                return this.deliverToMultipleUsers(message, allUserIds);
 
             default:
                 throw new Error(`未対応の配信タイプ: ${request.deliveryType}`);

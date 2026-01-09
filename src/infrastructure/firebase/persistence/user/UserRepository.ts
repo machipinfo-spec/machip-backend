@@ -51,6 +51,21 @@ export class UserRepository implements IUserRepository {
         );
     }
 
+    async findAll(): Promise<User[]> {
+        const { db } = await getDbAndAuth();
+        const querySnapshot = await db.collection(this.tableName).get();
+
+        return querySnapshot.docs.map((doc) => {
+            const data = doc.data();
+            return User.reconstitute(
+                new AuthId(data.authId),
+                new UserId(data.userId),
+                new UserName(data.name),
+                new Email(data.email),
+            );
+        });
+    }
+
     async save(user: User): Promise<void> {
         const record = {
             authId: user.authId.getValue(),

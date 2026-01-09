@@ -21,15 +21,16 @@ const profileRepository = new ProfileRepository();
 const messageRepository = new MessageRepository();
 const userMessageRepository = new UserMessageRepository();
 const messageBroadcastRepository = new MessageBroadcastRepository();
+const userRepository = new UserRepository();
 const messageSendingService = new MessageSendingService(
     profileRepository,
     messageRepository,
     userMessageRepository,
     messageBroadcastRepository,
+    userRepository,
     new Logger('MessageSendingService'),
 );
 const threadCreateUseCase = new ThreadCreateUseCase(threadRepository, profileRepository, messageSendingService);
-const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
 const useCase = new CreatePointInfoUseCase(mapRepository, reverseGeocodingRepository, messageSendingService);
