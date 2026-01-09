@@ -1,5 +1,6 @@
+// interfaces/handlers/map/post.ts
+
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { MapRepository } from '../../../infrastructure/firebase/persistence/map/MapRepository';
 import { CreatePointInfoUseCase } from '../../../application/usecases/map/CreatePointInfoUseCase';
 import { ThreadRepository } from '../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
@@ -14,6 +15,7 @@ import { MessageBroadcastRepository } from '../../../infrastructure/firebase/per
 import { MessageRepository } from '../../../infrastructure/firebase/persistence/inbox/MessageRepository';
 import { UserMessageRepository } from '../../../infrastructure/firebase/persistence/inbox/UserMessageRepository';
 import { Logger } from '../../../shared/logger';
+
 const reverseGeocodingRepository = new ReverseGeocodingRepository();
 const mapRepository = new MapRepository();
 const threadRepository = new ThreadRepository();
@@ -35,9 +37,6 @@ const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
 const useCase = new CreatePointInfoUseCase(mapRepository, reverseGeocodingRepository, messageSendingService);
 
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'your-bucket-name';
-const s3 = new S3Client({ region: process.env.AWS_REGION || 'ap-northeast-1' });
-
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': '*',
@@ -50,7 +49,7 @@ interface CreatePointInfoRequest {
     lng: number;
     threadName: string;
     category: string;
-    imageBase64?: string;
+    imageUrl?: string;
     selectedDate?: string;
 }
 
@@ -90,7 +89,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         let requestBody: CreatePointInfoRequest;
         try {
-            requestBody = JSON.parse(event.body);
+            let body = event.body;
+            if (event.isBase64Encoded) {
+                body = Buffer.from(body, 'base64').toString('utf-8');
+            }
+            requestBody = JSON.parse(body || '{}');
         } catch (parseError) {
             return {
                 statusCode: 400,
@@ -99,7 +102,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const { lat, lng, threadName, category, imageBase64, selectedDate } = requestBody;
+        const { lat, lng, threadName, category, imageUrl, selectedDate } = requestBody;
 
         if (lat === undefined || lng === undefined || !threadName || !category) {
             return {
@@ -112,34 +115,19 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        let imageBytes: Buffer | undefined;
-        if (imageBase64) {
-            // ------------------------------------
-            // ★ Base64文字列 → バイナリへ変換
-            // ------------------------------------
-            try {
-                // 「data:image/png;base64,xxxxxxxx」の場合はプレフィックス除去
-                const base64Data = imageBase64.replace(/^data:.*;base64,/, '');
-                imageBytes = Buffer.from(base64Data, 'base64');
-            } catch (err) {
-                return {
-                    statusCode: 400,
-                    headers: corsHeaders,
-                    body: JSON.stringify({ message: 'Invalid Base64 image' }),
-                };
-            }
-        }
-
         const selectDate = selectedDate ? new Date(selectedDate) : null;
+
+        // Use updated UseCase with imageUrl
         const pointCreateResponse = await useCase.execute({
             lat,
             lng,
             threadName,
             category,
             selectDate: selectDate,
-            imageBuffer: imageBytes || null,
+            imageUrl: imageUrl || null,
             userId: user.userId.getValue(),
         });
+
         if (pointCreateResponse.error || !pointCreateResponse.pointInfo) {
             return {
                 statusCode: 500,
@@ -153,11 +141,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const threadCreateResponse = await threadCreateUseCase.execute(
             threadName,
             user.userId.getValue(),
-            null,
             point.getId().getValue(),
-            imageBytes || null,
+            imageUrl || null,
             selectDate,
             point.getAddress(),
+            null,
         );
         if (threadCreateResponse.error || !threadCreateResponse.thread) {
             return {

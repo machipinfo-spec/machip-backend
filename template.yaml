@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-    tetra-backend
+    tetra-backend (Updated for Binary Support)
 
 Transform:
     - AWS::Serverless-2016-10-31
@@ -57,6 +57,7 @@ Resources:
                 AllowHeaders: "'Content-Type,Authorization'"
                 AllowCredentials: true
 
+
     # 画像保管用S3バケット
     ImageBucket:
         Type: AWS::S3::Bucket
@@ -81,10 +82,10 @@ Resources:
                           - GET
                           - PUT
                           - POST
-                          - DELETE
+                          - HEAD
                       AllowedHeaders:
                           - '*'
-                      MaxAge: 3600
+                      MaxAge: 3000
             LifecycleConfiguration:
                 Rules:
                     - Id: DeleteOldVersions
@@ -562,6 +563,41 @@ Resources:
                 Sourcemap: true
                 EntryPoints:
                     - index.ts
+
+    UploadPresignedUrlFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/upload/presigned-url/
+            Handler: post.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 256
+            Environment:
+                Variables:
+                    IMAGE_BUCKET_NAME: !Ref ImageBucket
+                    CDN_DOMAIN: !If [IsStg, 'cdn-stg.example.com', !Ref AWS::NoValue]
+            Policies:
+                - S3CrudPolicy:
+                    BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                GetPresignedUrl:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /upload/presigned-url
+                        Method: POST
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - post.ts
 
 Outputs:
     TetraApiEndpoint:

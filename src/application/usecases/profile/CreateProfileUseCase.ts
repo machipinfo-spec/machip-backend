@@ -7,13 +7,11 @@ import { ProfileUrl } from '../../../domain/value-object/profile/ProfileUrl';
 import { ImageUrl } from '../../../domain/value-object/users/ImageUrl';
 import { UserId } from '../../../domain/value-object/users/UserId';
 import { UserName } from '../../../domain/value-object/users/UserName';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-// ====== 修正：imageBytes を受け取るリクエスト構造 ======
 export interface CreateProfileRequest {
     userId: string;
     userName: string;
-    imageBytes: Buffer;
+    imageUrl: string;
     introduction: string;
     url: string | null;
 }
@@ -23,12 +21,6 @@ export interface CreateProfileResponse {
     error?: string;
 }
 
-// ====== S3 クライアント ======
-const s3 = new S3Client({ region: process.env.AWS_REGION || 'ap-northeast-1' });
-
-// S3 バケット名（CloudFormation と合わせる）
-const BUCKET_NAME = process.env.IS_STG === 'true' ? 'tetra-images-stg' : 'tetra-images-poc';
-
 export class CreateProfileUseCase {
     constructor(private readonly profileRepository: IProfileRepository) {}
 
@@ -37,8 +29,9 @@ export class CreateProfileUseCase {
             if (!request.userId) {
                 return { profile: null, error: 'User ID is required' };
             }
-            if (!request.imageBytes) {
-                return { profile: null, error: 'Image data is required' };
+            // imageUrl is required for creation? Assuming yes based on previous code checking imageBytes.
+            if (!request.imageUrl) {
+                return { profile: null, error: 'Image URL is required' };
             }
 
             // -------------------------
@@ -50,32 +43,6 @@ export class CreateProfileUseCase {
             }
 
             // -------------------------
-            // S3 に画像アップロード
-            // -------------------------
-
-            const imageKey = `profile/${request.userId}.png`;
-
-            const putParams = {
-                Bucket: BUCKET_NAME,
-                Key: imageKey,
-                Body: request.imageBytes,
-                ContentType: 'image/png',
-            };
-
-            try {
-                await s3.send(new PutObjectCommand(putParams));
-            } catch (err) {
-                console.error('Failed to upload profile image to S3:', err);
-                return {
-                    profile: null,
-                    error: 'Failed to upload profile image',
-                };
-            }
-
-            // CloudFront を後で使うならここを書き換えればOK
-            const uploadedImageUrl = `https://${BUCKET_NAME}.s3.amazonaws.com/${imageKey}`;
-
-            // -------------------------
             // ドメインモデル生成
             // -------------------------
             let profile: Profile;
@@ -83,7 +50,7 @@ export class CreateProfileUseCase {
                 profile = Profile.create(
                     UserId.fromExisting(request.userId),
                     UserName.create(request.userName),
-                    ImageUrl.create(uploadedImageUrl),
+                    ImageUrl.create(request.imageUrl),
                     Introduction.create(request.introduction),
                     ProfileUrl.create(request.url),
                 );
