@@ -6,11 +6,13 @@ import { ProfileRepository } from '../../../../infrastructure/firebase/persisten
 import { HandlerUtil } from '../../util';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
 import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
+import { MimeTypeHelper } from '../../../../shared/mimeTypeHelper';
 
 const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const profileRepository = new ProfileRepository();
 const updateProfileUseCase = new UpdateProfileUseCase(profileRepository);
+
 const handlerUtil = new HandlerUtil();
 
 const corsHeaders = {
@@ -31,7 +33,7 @@ interface UpdateProfileResponse {
 
 export interface UpdateProfileRequest {
     userName?: string;
-    imageBase64?: string;
+    imageUrl?: string;
     introduction?: string;
     url: string | null;
 }
@@ -53,7 +55,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
         const userId = user.userId.getValue();
 
-        // リクエストボディの解析
+        let userName: string | undefined;
+        let introduction: string | undefined;
+        let url: string | null = null;
+        let imageUrl: string | undefined;
+
+        console.log('DEBUG: Received PUT /user/profile');
+
+        const contentType = event.headers['Content-Type'] || event.headers['content-type'] || '';
+
+        // Prioritize JSON
         if (!event.body) {
             return {
                 statusCode: 400,
@@ -64,51 +75,41 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         let requestBody: UpdateProfileRequest;
         try {
-            requestBody = JSON.parse(event.body);
-        } catch (parseError) {
+            let body = event.body;
+            if (event.isBase64Encoded) {
+                body = Buffer.from(body, 'base64').toString('utf-8');
+            }
+            requestBody = JSON.parse(body || '{}');
+        } catch (e) {
             return {
                 statusCode: 400,
                 headers: corsHeaders,
-                body: JSON.stringify({ message: 'Invalid JSON in request body' }),
+                body: JSON.stringify({ message: 'Invalid JSON' }),
             };
         }
 
-        const { userName, imageBase64, introduction, url } = requestBody;
+        userName = requestBody.userName;
+        introduction = requestBody.introduction;
+        url = requestBody.url;
+        imageUrl = requestBody.imageUrl;
 
         // 少なくとも1つのフィールドが指定されているか確認
-        if (userName === undefined && imageBase64 === undefined && introduction === undefined) {
+        if (userName === undefined && imageUrl === undefined && introduction === undefined && url === undefined) {
             return {
                 statusCode: 400,
                 headers: corsHeaders,
                 body: JSON.stringify({
                     message: 'At least one field must be provided for update',
-                    allowed: ['userName', 'imageUrl', 'introduction'],
+                    allowed: ['userName', 'imageUrl', 'introduction', 'url'],
                 }),
             };
-        }
-        // ------------------------------------
-        // ★ Base64文字列 → バイナリへ変換
-        // ------------------------------------
-        let imageBytes: Buffer | null = null;
-        if (imageBase64) {
-            try {
-                // 「data:image/png;base64,xxxxxxxx」の場合はプレフィックス除去
-                const base64Data = imageBase64.replace(/^data:.*;base64,/, '');
-                imageBytes = Buffer.from(base64Data, 'base64');
-            } catch (err) {
-                return {
-                    statusCode: 400,
-                    headers: corsHeaders,
-                    body: JSON.stringify({ message: 'Invalid Base64 image' }),
-                };
-            }
         }
 
         // UseCase実行
         const response = await updateProfileUseCase.execute({
             userId,
             userName,
-            imageBytes,
+            imageUrl,
             introduction,
             url,
         });

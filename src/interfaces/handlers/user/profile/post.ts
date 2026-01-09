@@ -31,16 +31,33 @@ interface CreateProfileResponse {
 
 interface CreateProfileRequest {
     userName: string;
-    imageBase64: string;
+    imageUrl: string;
     introduction: string;
     url: string | null;
 }
 
+/**
+ * POST /profile - プロフィール作成
+ */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         let authId = await handlerUtil.getAuthId(event);
-        const user = await getUserUseCase.execute(authId!);
+        // GetUserUseCase might fail if user doesn't exist yet?
+        // Typically CreateProfile is called when user is creating their profile for the first time.
+        // But GetUserUseCase checks typically against Repository.
+        // If this is "Create Profile", maybe the user exists in Auth but not in DB?
+        // Let's assume standard flow.
 
+        // Wait, if it's CREATE profile, we might just need the authId to create the user entity?
+        // Let's look at the original code.
+        // Original code: const user = await getUserUseCase.execute(authId!);
+        // If user is null, it returns 403.
+        // So this implies the USER entity must exist before PROFILE?
+        // Or is this "User Registration"?
+        // In this system, User and Profile are separate.
+
+        // Assuming user exists.
+        const user = await getUserUseCase.execute(authId!);
         if (!user) {
             return {
                 statusCode: 403,
@@ -50,9 +67,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
         const userId = user.userId.getValue();
 
-        // ------------------------------------
-        // リクエストボディの解析
-        // ------------------------------------
+        let userName: string | undefined;
+        let introduction: string | undefined;
+        let url: string | null = null;
+        let imageUrl: string | undefined;
+
+        console.log('DEBUG: Received POST /user/profile');
+
+        const contentType = event.headers['Content-Type'] || event.headers['content-type'] || '';
+
+        // JSON Only
         if (!event.body) {
             return {
                 statusCode: 400,
@@ -63,52 +87,39 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         let requestBody: CreateProfileRequest;
         try {
-            requestBody = JSON.parse(event.body);
-        } catch (parseError) {
+            let body = event.body;
+            if (event.isBase64Encoded) {
+                body = Buffer.from(body, 'base64').toString('utf-8');
+            }
+            requestBody = JSON.parse(body || '{}');
+        } catch (e) {
             return {
                 statusCode: 400,
                 headers: corsHeaders,
-                body: JSON.stringify({ message: 'Invalid JSON in request body' }),
+                body: JSON.stringify({ message: 'Invalid JSON' }),
             };
         }
 
-        const { userName, imageBase64, introduction, url } = requestBody;
+        userName = requestBody.userName;
+        introduction = requestBody.introduction;
+        url = requestBody.url;
+        imageUrl = requestBody.imageUrl;
 
-        // 必須チェック
-        if (!userName || !imageBase64 || introduction === undefined) {
+        if (!userName || !imageUrl || !introduction) {
             return {
                 statusCode: 400,
                 headers: corsHeaders,
                 body: JSON.stringify({
                     message: 'Missing required fields',
-                    required: ['userName', 'imageBase64', 'introduction'],
+                    required: ['userName', 'imageUrl', 'introduction'],
                 }),
             };
         }
 
-        // ------------------------------------
-        // ★ Base64文字列 → バイナリへ変換
-        // ------------------------------------
-        let imageBytes: Buffer;
-        try {
-            // 「data:image/png;base64,xxxxxxxx」の場合はプレフィックス除去
-            const base64Data = imageBase64.replace(/^data:.*;base64,/, '');
-            imageBytes = Buffer.from(base64Data, 'base64');
-        } catch (err) {
-            return {
-                statusCode: 400,
-                headers: corsHeaders,
-                body: JSON.stringify({ message: 'Invalid Base64 image' }),
-            };
-        }
-
-        // ------------------------------------
-        // UseCase 実行（imageBytesを渡す）
-        // ------------------------------------
         const response = await createProfileUseCase.execute({
             userId,
             userName,
-            imageBytes,
+            imageUrl,
             introduction,
             url,
         });

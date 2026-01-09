@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ThreadRepository } from '../../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
 import { ThreadCreateUseCase } from '../../../../application/usecases/timeline/ThreadCreateUseCase';
 import { HandlerUtil } from '../../util';
@@ -40,21 +39,11 @@ const corsHeaders = {
 interface CreateThreadRequest {
     threadName: string;
     parentThreadId?: string;
-    imageBase64?: string;
-}
-
-interface CreateThreadResponse {
-    id: string;
-    threadName: string;
-    createdAt: string;
-    ownerUserId: string;
-    parentThreadId: string | null;
-    childThreadIds: string[];
-    imageUrl: string | null;
+    imageUrl?: string;
 }
 
 /**
- * POST /thread - スレッド作成
+ * POST /timeline/thread - スレッド作成
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
@@ -70,6 +59,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
         const userId = user.userId.getValue();
 
+        // ------------------------------------
+        // リクエストボディの解析
+        // ------------------------------------
         if (!event.body) {
             return {
                 statusCode: 400,
@@ -80,8 +72,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         let requestBody: CreateThreadRequest;
         try {
-            requestBody = JSON.parse(event.body);
+            let body = event.body;
+            if (event.isBase64Encoded) {
+                body = Buffer.from(body, 'base64').toString('utf-8');
+            }
+            requestBody = JSON.parse(body || '{}');
         } catch (parseError) {
+            console.error('DEBUG: JSON Parse Error:', parseError);
             return {
                 statusCode: 400,
                 headers: corsHeaders,
@@ -89,9 +86,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const { threadName, parentThreadId, imageBase64 } = requestBody;
+        const threadName = requestBody.threadName;
+        const parentThreadId = requestBody.parentThreadId;
+        const imageUrl = requestBody.imageUrl;
 
-        if (!threadName || !userId) {
+        if (!threadName) {
             return {
                 statusCode: 400,
                 headers: corsHeaders,
@@ -101,33 +100,18 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 }),
             };
         }
-        let imageBytes: Buffer | undefined;
-        if (imageBase64) {
-            // ------------------------------------
-            // ★ Base64文字列 → バイナリへ変換
-            // ------------------------------------
-            try {
-                // 「data:image/png;base64,xxxxxxxx」の場合はプレフィックス除去
-                const base64Data = imageBase64.replace(/^data:.*;base64,/, '');
-                imageBytes = Buffer.from(base64Data, 'base64');
-            } catch (err) {
-                return {
-                    statusCode: 400,
-                    headers: corsHeaders,
-                    body: JSON.stringify({ message: 'Invalid Base64 image' }),
-                };
-            }
-        }
 
+        // UseCase実行
         const threadResponse = await threadCreateUseCase.execute(
             threadName,
             userId,
+            null, // pointInfoId
+            imageUrl || null,
+            null, // selectDate
+            null, // address
             parentThreadId || null,
-            null,
-            imageBytes || null,
-            null,
-            null,
         );
+
         if (threadResponse.error || !threadResponse.thread) {
             return {
                 statusCode: 500,
