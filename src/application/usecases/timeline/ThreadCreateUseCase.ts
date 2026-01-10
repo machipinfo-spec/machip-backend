@@ -162,7 +162,7 @@ export class ThreadCreateUseCase {
                         replyUserId: ownerUserId,
                         replyUserName: replyUserProfile?.userName.getValue() || 'Unknown User',
                     },
-                    senderUserId: UserId.SYSTEM_ID.getValue(),
+                    senderUserId: ownerUserId,
                     deliveryType: 'single',
                     targetUserIds: [parent.getOwnerUserId().getValue()],
                 });

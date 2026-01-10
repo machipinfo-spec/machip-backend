@@ -79,14 +79,13 @@ export class GetUserMessagesUseCase {
 
             const messageResponses: UserMessageResponse[] = [];
 
-            const profile = await this.profileRepository.findByUserId(userId);
-            if (!profile) {
-                throw new Error('関連するプロフィールが見つかりません');
-            }
-
             for (const userMessage of userMessages) {
                 const message = await this.messageRepository.findById(userMessage.getMessageId());
                 if (message) {
+                    const profile = await this.profileRepository.findByUserId(message.getSenderUserId());
+                    if (!profile) {
+                        throw new Error('関連するプロフィールが見つかりません');
+                    }
                     messageResponses.push({
                         id: userMessage.getId().getValue(),
                         messageId: userMessage.getMessageId().getValue(),
