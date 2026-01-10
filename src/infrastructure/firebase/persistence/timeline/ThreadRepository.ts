@@ -40,36 +40,39 @@ export class ThreadRepository implements IThreadRepository {
         return this.mapToThread(docRef.id, data);
     }
 
-    async findByOwnerUserId(ownerUserId: string, limit = 50): Promise<Thread[]> {
+    async findByOwnerUserId(ownerUserId: string, limit = 50, offset = 0): Promise<Thread[]> {
         const { db } = await getDbAndAuth();
         const snapshot = await db
             .collection(this.tableName)
             .where('ownerUserId', '==', ownerUserId)
             .orderBy('createdAt', 'desc')
+            .offset(offset)
             .limit(limit)
             .get();
 
         return this.mapDocsToThreads(snapshot);
     }
 
-    async findByParentThreadId(parentThreadId: string, limit = 50): Promise<Thread[]> {
+    async findByParentThreadId(parentThreadId: string, limit = 50, offset = 0): Promise<Thread[]> {
         const { db } = await getDbAndAuth();
         const snapshot = await db
             .collection(this.tableName)
             .where('parentThreadId', '==', parentThreadId)
             .orderBy('createdAt', 'asc')
+            .offset(offset)
             .limit(limit)
             .get();
 
         return this.mapDocsToThreads(snapshot);
     }
 
-    async findRootThreads(limit = 50): Promise<Thread[]> {
+    async findRootThreads(limit = 50, offset = 0): Promise<Thread[]> {
         const { db } = await getDbAndAuth();
         const snapshot = await db
             .collection(this.tableName)
             .where('parentThreadId', '==', null)
             .orderBy('createdAt', 'desc')
+            .offset(offset)
             .limit(limit)
             .get();
 
@@ -77,13 +80,9 @@ export class ThreadRepository implements IThreadRepository {
     }
 
     private mapToThread(docId: string, data: any): Thread {
-        const parentThreadId = data.parentThreadId 
-            ? ThreadId.fromExisting(data.parentThreadId)
-            : null;
+        const parentThreadId = data.parentThreadId ? ThreadId.fromExisting(data.parentThreadId) : null;
 
-        const childThreadIds = (data.childThreadIds || []).map((id: string) => 
-            ThreadId.fromExisting(id)
-        );
+        const childThreadIds = (data.childThreadIds || []).map((id: string) => ThreadId.fromExisting(id));
 
         return Thread.fromExisting(
             ThreadId.fromExisting(docId),
@@ -96,7 +95,7 @@ export class ThreadRepository implements IThreadRepository {
             data.mapPointInfoId ? PointInfoId.fromExisting(data.mapPointInfoId) : null,
             data.imageUrl || null,
             data.selectDate ? (data.selectDate.toDate ? data.selectDate.toDate() : data.selectDate) : null,
-            data.address || null
+            data.address || null,
         );
     }
 
@@ -108,7 +107,7 @@ export class ThreadRepository implements IThreadRepository {
     async softDelete(threadId: string): Promise<void> {
         const { db } = await getDbAndAuth();
         await db.collection(this.tableName).doc(threadId).update({
-            deleatedAt: new Date()
+            deleatedAt: new Date(),
         });
     }
 
@@ -126,9 +125,9 @@ export class ThreadRepository implements IThreadRepository {
 
         const snapshot = await db
             .collection(this.tableName)
-            .where("selectDate", ">=", start)
-            .where("selectDate", "<=", end)
-            .orderBy("selectDate", "asc")
+            .where('selectDate', '>=', start)
+            .where('selectDate', '<=', end)
+            .orderBy('selectDate', 'asc')
             .limit(limit)
             .get();
 

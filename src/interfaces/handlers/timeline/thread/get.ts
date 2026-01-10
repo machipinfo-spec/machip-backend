@@ -44,7 +44,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 };
             }
         }
-        const { threadId, ownerUserId, includeChildren, limit } = event.queryStringParameters || {};
+        const { threadId, ownerUserId, includeChildren, limit, offset } = event.queryStringParameters || {};
 
         // 特定スレッド取得
         if (threadId) {
@@ -71,6 +71,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const threads = await threadRepository.findByOwnerUserId(
                 ownerUserId,
                 limit ? parseInt(limit, 10) : undefined,
+                offset ? parseInt(offset, 10) : undefined,
             );
 
             const responseBody = threads.map((thread) => ({
