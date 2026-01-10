@@ -43,9 +43,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 };
             }
         }
-        const { limit } = event.queryStringParameters || {};
+        const { limit, offset } = event.queryStringParameters || {};
 
-        const result = await timelineReadUseCase.execute(limit ? parseInt(limit, 10) : undefined);
+        const result = await timelineReadUseCase.execute(
+            limit ? parseInt(limit, 10) : undefined,
+            offset ? parseInt(offset, 10) : undefined,
+        );
 
         return {
             statusCode: 200,

@@ -31,9 +31,9 @@ export interface TimelineReadResult {
 export class TimelineReadUseCase {
     constructor(private threadRepository: IThreadRepository, private profileRepository: IProfileRepository) {}
 
-    async execute(limit?: number): Promise<TimelineReadResult> {
+    async execute(limit?: number, offset?: number): Promise<TimelineReadResult> {
         // トップレベル(ルート)スレッドを取得
-        const rootThreads = await this.threadRepository.findRootThreads(limit);
+        const rootThreads = await this.threadRepository.findRootThreads(limit, offset);
 
         // TimelineThreadItem形式に変換(プロフィール情報を並行取得)
         const threads: TimelineThreadItem[] = await Promise.all(
@@ -81,9 +81,9 @@ export class TimelineReadUseCase {
 export class TimelineReadByUserUseCase {
     constructor(private threadRepository: IThreadRepository, private profileRepository: IProfileRepository) {}
 
-    async execute(ownerUserId: string, limit?: number): Promise<TimelineReadResult> {
+    async execute(ownerUserId: string, limit?: number, offset?: number): Promise<TimelineReadResult> {
         // 指定ユーザーのスレッドを取得
-        const userThreads = await this.threadRepository.findByOwnerUserId(ownerUserId, limit);
+        const userThreads = await this.threadRepository.findByOwnerUserId(ownerUserId, limit, offset);
 
         // トップレベルのスレッドのみをフィルタリング
         const rootThreads = userThreads.filter((thread) => !thread.hasParent());

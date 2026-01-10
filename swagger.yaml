@@ -311,6 +311,10 @@ paths:
           name: limit
           schema:
             type: integer
+        - in: query
+          name: offset
+          schema:
+            type: integer
       responses:
         '200':
           description: List of threads
@@ -342,6 +346,10 @@ paths:
           name: includeChildren
           schema:
             type: boolean
+        - in: query
+          name: offset
+          schema:
+            type: integer
       responses:
         '200':
           description: Thread object or List of threads
