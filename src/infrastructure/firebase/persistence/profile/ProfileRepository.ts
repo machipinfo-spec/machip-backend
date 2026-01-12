@@ -4,7 +4,7 @@ import { UserId } from '../../../../domain/value-object/users/UserId';
 import { UserName } from '../../../../domain/value-object/users/UserName';
 import { ImageUrl } from '../../../../domain/value-object/users/ImageUrl';
 import { getDbAndAuth } from '../../config/firebaseAdmin';
-import { IProfileRepository } from '../../../../domain/repositories/profile/IProfileRepository.ts';
+import { IProfileRepository } from '../../../../domain/repositories/profile/IProfileRepository';
 import { Profile } from '../../../../domain/entities/profile/profile';
 import { Introduction } from '../../../../domain/value-object/profile/Introduction';
 import { ProfileId } from '../../../../domain/value-object/profile/ProfileId';

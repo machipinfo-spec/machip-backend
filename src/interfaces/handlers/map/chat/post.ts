@@ -1,24 +1,21 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { MapRepository } from '../../../infrastructure/firebase/persistence/map/MapRepository';
-import { CreatePointInfoUseCase } from '../../../application/usecases/map/CreatePointInfoUseCase';
-import { ThreadRepository } from '../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
-import { ThreadCreateUseCase } from '../../../application/usecases/timeline/ThreadCreateUseCase';
-import { GetUserUseCase } from '../../../application/usecases/user/GetUserUseCase';
-import { UserRepository } from '../../../infrastructure/firebase/persistence/user/UserRepository';
-import { HandlerUtil } from '../util';
-import { ReverseGeocodingRepository } from '../../../infrastructure/gcp/persistence/ReverseGeocodingRepository';
-import { ProfileRepository } from '../../../infrastructure/firebase/persistence/profile/ProfileRepository';
-import { MessageSendingService } from '../../../application/services/inbox/MessageSendingService';
-import { MessageBroadcastRepository } from '../../../infrastructure/firebase/persistence/inbox/MessageBroadcastRepository';
-import { MessageRepository } from '../../../infrastructure/firebase/persistence/inbox/MessageRepository';
-import { UserMessageRepository } from '../../../infrastructure/firebase/persistence/inbox/UserMessageRepository';
-import { Logger } from '../../../shared/logger';
-
-import { PointEventRepository } from '../../../infrastructure/firebase/persistence/map/PointEventRepository';
+import { MapRepository } from '../../../../infrastructure/firebase/persistence/map/MapRepository';
+import { CreateChatPointUseCase } from '../../../../application/usecases/map/CreateChatPointUseCase';
+import { ThreadRepository } from '../../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
+import { ThreadCreateUseCase } from '../../../../application/usecases/timeline/ThreadCreateUseCase';
+import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
+import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
+import { HandlerUtil } from '../../util';
+import { ReverseGeocodingRepository } from '../../../../infrastructure/gcp/persistence/ReverseGeocodingRepository';
+import { ProfileRepository } from '../../../../infrastructure/firebase/persistence/profile/ProfileRepository';
+import { MessageSendingService } from '../../../../application/services/inbox/MessageSendingService';
+import { MessageBroadcastRepository } from '../../../../infrastructure/firebase/persistence/inbox/MessageBroadcastRepository';
+import { MessageRepository } from '../../../../infrastructure/firebase/persistence/inbox/MessageRepository';
+import { UserMessageRepository } from '../../../../infrastructure/firebase/persistence/inbox/UserMessageRepository';
+import { Logger } from '../../../../shared/logger';
 
 const reverseGeocodingRepository = new ReverseGeocodingRepository();
 const mapRepository = new MapRepository();
-const pointEventRepository = new PointEventRepository();
 const threadRepository = new ThreadRepository();
 const profileRepository = new ProfileRepository();
 const messageRepository = new MessageRepository();
@@ -36,12 +33,7 @@ const messageSendingService = new MessageSendingService(
 const threadCreateUseCase = new ThreadCreateUseCase(threadRepository, profileRepository, messageSendingService);
 const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
-const useCase = new CreatePointInfoUseCase(
-    mapRepository,
-    pointEventRepository,
-    reverseGeocodingRepository,
-    messageSendingService,
-);
+const useCase = new CreateChatPointUseCase(mapRepository, reverseGeocodingRepository, messageSendingService);
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -50,36 +42,13 @@ const corsHeaders = {
     'Content-Type': 'application/json',
 };
 
-interface CreatePointInfoRequest {
+interface CreateChatPointRequest {
     lat: number;
     lng: number;
     threadName: string;
-    category: string;
     imageUrl?: string;
-    // selectedDate removed
-    startDate?: string;
-    endDate?: string;
-    detail?: string;
-    url?: string;
 }
 
-interface CreatePointInfoResponse {
-    id: string;
-    lat: number;
-    lng: number;
-    threadName: string;
-    category: string;
-    threadId: string;
-    imageUrl: string | null;
-    startDate: string | null;
-    endDate: string | null;
-    detail: string | null;
-    url: string | null;
-}
-
-/**
- * POST /map - ポイント情報作成
- */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         let authId = await handlerUtil.getAuthId(event);
@@ -101,7 +70,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        let requestBody: CreatePointInfoRequest;
+        let requestBody: CreateChatPointRequest;
         try {
             let body = event.body;
             if (event.isBase64Encoded) {
@@ -116,48 +85,41 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const { lat, lng, threadName, category, imageUrl, detail, url, startDate, endDate } = requestBody;
+        const { lat, lng, threadName, imageUrl } = requestBody;
 
-        if (lat === undefined || lng === undefined || !threadName || !category) {
+        if (lat === undefined || lng === undefined || !threadName) {
             return {
                 statusCode: 400,
                 headers: corsHeaders,
                 body: JSON.stringify({
                     message: 'Missing required fields',
-                    required: ['lat', 'lng', 'threadName', 'category'],
+                    required: ['lat', 'lng', 'threadName'],
                 }),
             };
         }
 
-        const start = startDate ? new Date(startDate) : null;
-        const end = endDate ? new Date(endDate) : null;
-
-        // Use updated UseCase with imageUrl
-        const pointCreateResponse = await useCase.execute({
+        const response = await useCase.execute({
             lat,
             lng,
             threadName,
-            category,
-            // selectDate removed
-            startDate: start,
-            endDate: end,
-            detail: detail || null,
-            url: url || null,
             imageUrl: imageUrl || null,
             userId: user.userId.getValue(),
         });
 
-        if (pointCreateResponse.error || !pointCreateResponse.pointInfo) {
+        if (response.error || !response.pointInfo) {
             return {
                 statusCode: 500,
                 headers: corsHeaders,
-                body: JSON.stringify({ message: 'Failed to create point info', error: pointCreateResponse.error }),
+                body: JSON.stringify({ message: 'Failed to create chat point', error: response.error }),
             };
         }
-        const point = pointCreateResponse.pointInfo;
-        const pointEvent = pointCreateResponse.pointEvent;
+        const point = response.pointInfo;
 
-        // map上に関連したスレッドを立ち上げる
+        // Create thread
+        // Chat uses current time implies startDate/endDate might be null? Or current time?
+        // If selectDate is removed, maybe chat threads don't have startDate/endDate unless specified?
+        // User said "selectDate is unnecessary as it's period specified".
+        // For chat, maybe no period?
         const threadCreateResponse = await threadCreateUseCase.execute(
             threadName,
             user.userId.getValue(),
@@ -165,29 +127,26 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             imageUrl || null,
             null, // parentThreadId
         );
+
         if (threadCreateResponse.error || !threadCreateResponse.thread) {
             return {
                 statusCode: 500,
                 headers: corsHeaders,
                 body: JSON.stringify({
-                    message: 'Failed to create thread for point info',
+                    message: 'Failed to create thread for chat point',
                     error: threadCreateResponse.error,
                 }),
             };
         }
 
-        const responseBody: CreatePointInfoResponse = {
+        const responseBody = {
             id: point.getId().getValue(),
             lat: point.getGeoLocation().getLat(),
             lng: point.getGeoLocation().getLng(),
             threadName: threadName,
-            category: point.getCategory().getValue(),
+            category: 'chat', // Fixed
             threadId: threadCreateResponse.thread.threadId,
             imageUrl: threadCreateResponse.thread.imageUrl || null,
-            startDate: pointEvent?.getStartDate().toISOString() || null,
-            endDate: pointEvent?.getEndDate().toISOString() || null,
-            detail: pointEvent?.getDetail() || null,
-            url: pointEvent?.getUrl() || null,
         };
 
         return {
@@ -196,7 +155,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             body: JSON.stringify(responseBody),
         };
     } catch (error: any) {
-        console.error('Error in createPointInfoHandler:', error);
+        console.error('Error in createChatPointHandler:', error);
         return {
             statusCode: 500,
             headers: corsHeaders,

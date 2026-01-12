@@ -213,6 +213,76 @@ Resources:
                 EntryPoints:
                     - index.ts
 
+    MapEventFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/map/event/
+            Handler: post.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                    ParameterName: '/tetra/firebase/*'
+                - SSMParameterWithSlashPrefixReadPolicy:
+                    ParameterName: '/tetra/google/*'
+                - S3CrudPolicy:
+                    BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                CreateEventPoint:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /map/event
+                        Method: POST
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - post.ts
+
+    MapChatFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/map/chat/
+            Handler: post.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                    ParameterName: '/tetra/firebase/*'
+                - SSMParameterWithSlashPrefixReadPolicy:
+                    ParameterName: '/tetra/google/*'
+                - S3CrudPolicy:
+                    BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                CreateChatPoint:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /map/chat
+                        Method: POST
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - post.ts
+
     # timeline
     TimelineFunction:
         Type: AWS::Serverless::Function

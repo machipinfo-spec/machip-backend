@@ -13,19 +13,28 @@ export interface CreatePointInfoRequest {
     lng: number;
     threadName: string;
     category: string;
-    selectDate: Date | null;
+    // selectDate removed
+    startDate: Date | null;
+    endDate: Date | null;
+    detail: string | null;
+    url: string | null;
     imageUrl: string | null;
     userId: string;
 }
 
 export interface CreatePointInfoResponse {
     pointInfo: PointInfo | null;
+    pointEvent?: PointEvent | null;
     error?: string;
 }
+
+import { IPointEventRepository } from '../../../domain/repositories/map/IPointEventRepository';
+import { PointEvent } from '../../../domain/entities/map/PointEvent';
 
 export class CreatePointInfoUseCase {
     constructor(
         private readonly mapRepository: IMapRepository,
+        private readonly pointEventRepository: IPointEventRepository,
         private readonly reverseGeocodingRepository: IReverseGeocodingRepository,
         private readonly messageSendingService: MessageSendingService,
     ) {}
@@ -37,7 +46,6 @@ export class CreatePointInfoUseCase {
             const geoLocation = GeoLocation.create(request.lat, request.lng);
             const threadName = ThreadName.create(request.threadName);
             const category = Category.create(request.category);
-            const selectDate = request.selectDate ? new Date(request.selectDate) : null;
             const pointInfoId = PointInfoId.create();
 
             // -------------------------
@@ -52,61 +60,66 @@ export class CreatePointInfoUseCase {
                 // 住所取得失敗しても Point 作成は継続
             }
 
+            // 1. PointInfo作成 (ロケーション情報)
             const pointInfo = PointInfo.create(
                 geoLocation,
-                threadName,
                 category,
-                request.imageUrl || null,
-                selectDate,
                 address,
-                null, // createdBy (User entity? or ID? PointInfo usually takes ID or Name or something. Let's check signature from previous view)
+                null, // deletedAt
+                UserId.fromExisting(request.userId),
                 pointInfoId,
             );
-
-            // Checking step 647 view: PointInfo.create signature:
-            // (geoLocation, threadName, category, imageUrl, selectDate, address, something, pointInfoId)
-            // wait, step 647 showed:
-            /*
-            const pointInfo = PointInfo.create(
-                geoLocation,
-                threadName,
-                category,
-                uploadedImageUrl || null,
-                selectDate,
-                address,
-                null,
-                pointInfoId,
-            );
-            */
-            // The 7th argument passed was `null`.
-            // Step 655 imports `UserId`, maybe needed?
-            // Let's assume the 7th arg is optional or nullable. I'll pass null as before.
 
             await this.mapRepository.save(pointInfo);
 
-            // 通知を送る
-            await this.messageSendingService.sendMessage({
-                type: 'newEvent',
-                subject: '新しいイベントが登録されました',
-                // NewEventMessageRequest
-                content: {
-                    pointInfoId: pointInfoId.getValue(),
-                    ownerUserId: request.userId,
-                    address: address || '',
-                    title: threadName.getValue(),
-                    date: selectDate,
-                },
-                senderUserId: UserId.SYSTEM_ID.getValue(),
-                deliveryType: 'all',
-            });
+            // 2. PointEvent作成 (イベント情報がある場合)
+            let pointEvent: PointEvent | null = null;
+            if (category.getValue() === 'event') {
+                if (!request.startDate || !request.endDate) {
+                    throw new Error('Event requires startDate and endDate');
+                }
+                const startDate = new Date(request.startDate);
+                const endDate = new Date(request.endDate);
+                pointEvent = PointEvent.create(
+                    pointInfoId,
+                    threadName,
+                    request.imageUrl || null,
+                    startDate,
+                    endDate,
+                    request.detail || null,
+                    request.url || null,
+                );
+                await this.pointEventRepository.save(pointEvent);
+
+                await this.messageSendingService.sendMessage({
+                    type: 'newEvent',
+                    subject: '新しいイベントが登録されました',
+                    // NewEventMessageRequest
+                    content: {
+                        pointInfoId: pointEvent.getId().getValue(),
+                        ownerUserId: request.userId,
+                        address: address || '',
+                        title: threadName.getValue(),
+                        date: startDate, // Use startDate instead of selectDate
+                        detail: request.detail,
+                        url: request.url,
+                        period:
+                            startDate && endDate ? `${startDate.toISOString()} ~ ${endDate.toISOString()}` : undefined, // 簡易フォーマット
+                    },
+                    senderUserId: UserId.SYSTEM_ID.getValue(),
+                    deliveryType: 'all',
+                });
+            }
 
             return {
                 pointInfo,
+                pointEvent,
             };
         } catch (error: any) {
             console.error('CreatePointInfoUseCase Error:', error);
             return {
                 pointInfo: null,
+                pointEvent: null,
                 error: error.message,
             };
         }

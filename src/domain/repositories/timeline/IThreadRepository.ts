@@ -9,4 +9,6 @@ export interface IThreadRepository {
     delete(threadId: string): Promise<void>;
     softDelete(threadId: string): Promise<void>;
     findBySelectDateRange(start: Date, end: Date, limit: number): Promise<Thread[]>;
+    findByMapPointInfoId(mapPointInfoId: string): Promise<Thread | null>;
+    findByMapPointInfoIds(mapPointInfoIds: string[]): Promise<Thread[]>;
 }

@@ -1,6 +1,6 @@
 import { IMessageBroadcastRepository } from '../../../domain/repositories/inbox/IMessageBroadcastRepository';
 import { IMessageRepository } from '../../../domain/repositories/inbox/IMessageRepository';
-import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
+import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
 import { BroadcastId } from '../../../domain/value-object/inbox/BroadcastId';
 import { Logger } from '../../../shared/logger';
 

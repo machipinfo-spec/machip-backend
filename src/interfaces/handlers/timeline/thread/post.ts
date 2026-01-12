@@ -107,8 +107,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             userId,
             null, // pointInfoId
             imageUrl || null,
-            null, // selectDate
-            null, // address
             parentThreadId || null,
         );
 

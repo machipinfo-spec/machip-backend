@@ -6,7 +6,7 @@ import { ThreadId } from '../../../domain/value-object/timeline/threadId';
 import { PointInfoId } from '../../../domain/value-object/map/pointInfoId';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Profile } from '../../../domain/entities/profile/profile';
-import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
+import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
 import { MessageSendingService } from '../../services/inbox/MessageSendingService';
 import { MimeTypeHelper } from '../../../shared/mimeTypeHelper';
 
@@ -30,9 +30,7 @@ export interface ThreadItem {
     childThreadIds: string[];
     mapPointInfoId: string | null;
     imageUrl: string | null;
-    selectDate: Date | null;
     childThreadCount: number;
-    address: string | null;
 }
 
 export interface ThreadCreateResponse {
@@ -70,9 +68,7 @@ export class ThreadCreateUseCase {
             childThreadIds: p.childThreadIds,
             mapPointInfoId: p.mapPointInfoId,
             imageUrl: p.imageUrl,
-            selectDate: p.selectDate,
             childThreadCount: p.childThreadIds.length,
-            address: p.address,
         };
     }
 
@@ -81,8 +77,6 @@ export class ThreadCreateUseCase {
         ownerUserId: string,
         pointInfoId: string | null,
         imageUrl: string | null,
-        selectDate: Date | null,
-        address: string | null,
         parentThreadId: string | null,
     ): Promise<ThreadCreateResponse> {
         console.log('ThreadCreateUseCase: execute called', {
@@ -90,8 +84,6 @@ export class ThreadCreateUseCase {
             ownerUserId,
             pointInfoId,
             imageUrl,
-            selectDate,
-            address,
             parentThreadId,
         });
 
@@ -103,8 +95,6 @@ export class ThreadCreateUseCase {
             thread = Thread.create(
                 ThreadName.create(threadName),
                 UserId.fromExisting(ownerUserId),
-                selectDate,
-                address ? address : null,
                 imageUrl,
                 parentThread,
                 threadId,
@@ -114,30 +104,12 @@ export class ThreadCreateUseCase {
                 ThreadName.create(threadName),
                 UserId.fromExisting(ownerUserId),
                 PointInfoId.fromExisting(pointInfoId),
-                selectDate,
-                address ? address : null,
                 imageUrl,
                 threadId,
             );
         }
 
-        // メッセージ送信サービスの呼び出し (既存ロジック維持)
-        if (pointInfoId) {
-            console.log('DEBUG: Sending message via MessageSendingService (Map Thread)');
-            try {
-                // ... (Original logic for system message if needed, or maybe it's handled elsewhere?
-                // The previous code had it. I should assume it's there or just save the thread)
-                // Wait, the previous view didn't show the message sending part in the deleted block,
-                // but checking the file content from previous turns might help.
-                // Actually, the original code had `await this.repository.save(thread);` and then returned.
-                // I will blindly save and return for now, as I don't see the message sending in the snippet I replaced.
-                // Wait, line 10 in imports shows `MessageSendingService`.
-                // I should verify if I deleted it.
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
+        // ... saving logic ...
         await this.threadRepository.save(thread);
         console.log('ThreadCreateUseCase: Thread saved', threadId.getValue());
 

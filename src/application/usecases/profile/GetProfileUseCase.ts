@@ -1,7 +1,7 @@
 // application/usecases/profile/GetUserProfileUseCase.ts
 
 import { Profile } from '../../../domain/entities/profile/profile';
-import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
+import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
 import { UserId } from '../../../domain/value-object/users/UserId';
 
 export interface GetProfileRequest {

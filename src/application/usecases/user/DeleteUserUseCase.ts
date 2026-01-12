@@ -1,7 +1,7 @@
 import { IUserRepository } from '../../../domain/repositories/user/IUserRepository';
 import { IIDRepository } from '../../../domain/repositories/user/IIDRepository';
 import { AuthId } from '../../../domain/value-object/users/AuthId';
-import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
+import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
 
 export class DeleteUserUseCase {
     constructor(

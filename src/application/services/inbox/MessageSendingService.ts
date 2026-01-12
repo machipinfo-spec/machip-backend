@@ -10,7 +10,7 @@ import { ReplyMessageContent } from '../../../domain/value-object/inbox/ReplyMes
 import { MessageSubject } from '../../../domain/value-object/inbox/MessageSubject';
 import { MessageType } from '../../../domain/value-object/inbox/MessageType';
 import { UserId } from '../../../domain/value-object/users/UserId';
-import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
+import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
 import { Profile } from '../../../domain/entities/profile/profile';
 import { UserName } from '../../../domain/value-object/users/UserName';
 import { ImageUrl } from '../../../domain/value-object/users/ImageUrl';
@@ -53,6 +53,9 @@ export interface NewEventMessageRequest {
         address: string;
         title: string;
         date: Date | null;
+        detail?: string | null;
+        url?: string | null;
+        period?: string;
     };
     senderUserId: string;
     deliveryType: 'single' | 'multiple' | 'all';

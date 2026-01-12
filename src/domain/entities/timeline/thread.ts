@@ -14,17 +14,14 @@ export class Thread {
         private readonly childThreadIds: ThreadId[],
         private readonly mapPointInfoId: PointInfoId | null,
         private readonly imageUrl: string | null,
-        private readonly selectDate: Date | null,
-        private readonly address: string | null,
-    ) {
+    ) // startDate, endDate, address removed
+    {
         Object.freeze(this);
     }
 
     public static create(
         threadName: ThreadName,
         ownerUserId: UserId,
-        selectDate: Date | null,
-        address: string | null,
         imageUrl: string | null,
         parentThreadId: ThreadId | null,
         threadId: ThreadId | null,
@@ -39,8 +36,6 @@ export class Thread {
             [],
             null,
             imageUrl,
-            selectDate,
-            address,
         );
     }
 
@@ -48,8 +43,6 @@ export class Thread {
         threadName: ThreadName,
         ownerUserId: UserId,
         mapPointInfoId: PointInfoId,
-        selectDate: Date | null,
-        address: string | null,
         imageUrl: string | null,
         threadId: ThreadId | null,
     ): Thread {
@@ -63,8 +56,6 @@ export class Thread {
             [],
             mapPointInfoId,
             imageUrl,
-            selectDate,
-            address,
         );
     }
 
@@ -78,8 +69,6 @@ export class Thread {
         childThreadIds: ThreadId[],
         mapPointInfoId: PointInfoId | null,
         imageUrl: string | null = null,
-        selectDate: Date | null,
-        address: string | null,
     ): Thread {
         return new Thread(
             id,
@@ -91,8 +80,6 @@ export class Thread {
             childThreadIds,
             mapPointInfoId,
             imageUrl,
-            selectDate,
-            address,
         );
     }
 
@@ -113,8 +100,6 @@ export class Thread {
             [...this.childThreadIds, childThreadId],
             this.mapPointInfoId,
             this.imageUrl,
-            this.selectDate,
-            this.address,
         );
     }
 
@@ -131,10 +116,10 @@ export class Thread {
             filteredChildren,
             this.mapPointInfoId,
             this.imageUrl,
-            this.selectDate,
-            this.address,
         );
     }
+
+    // ... methods ...
 
     public hasParent(): boolean {
         return this.parentThreadId !== null;
@@ -171,8 +156,6 @@ export class Thread {
             childThreadIds: this.childThreadIds.map((id) => id.getValue()),
             mapPointInfoId: this.mapPointInfoId ? this.mapPointInfoId.getValue() : null,
             imageUrl: this.imageUrl,
-            selectDate: this.selectDate,
-            address: this.address,
         };
     }
 }
@@ -187,6 +170,4 @@ export interface ThreadDTO {
     childThreadIds: string[];
     mapPointInfoId: string | null;
     imageUrl: string | null;
-    selectDate: Date | null;
-    address: string | null;
 }

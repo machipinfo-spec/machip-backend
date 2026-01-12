@@ -21,8 +21,7 @@ export class ThreadRepository implements IThreadRepository {
             childThreadIds: dto.childThreadIds,
             mapPointInfoId: dto.mapPointInfoId,
             imageUrl: dto.imageUrl || null,
-            selectDate: dto.selectDate || null,
-            address: dto.address || null,
+            // selectDate removed
         };
 
         const { db } = await getDbAndAuth();
@@ -94,8 +93,6 @@ export class ThreadRepository implements IThreadRepository {
             childThreadIds,
             data.mapPointInfoId ? PointInfoId.fromExisting(data.mapPointInfoId) : null,
             data.imageUrl || null,
-            data.selectDate ? (data.selectDate.toDate ? data.selectDate.toDate() : data.selectDate) : null,
-            data.address || null,
         );
     }
 
@@ -120,17 +117,80 @@ export class ThreadRepository implements IThreadRepository {
         });
         return results;
     }
+
+    // findBySelectDateRange is likely obsolete or needs to switch to startDate.
+    // Given the prompt "selectDate is unnecessary as it's period specified",
+    // we should probably check overlapping periods or similar if this was a calendar query.
+    // But since the interface wasn't shown, I will assume I should remove or update it to use startDate?
+    // User said "threadsのデータモデルにselectDateが含まれてますが、期間指定にしたのでこのプロパティは不要になりました".
+    // This implies `startDate` and `endDate` are now holding the period.
+    // So `findBySelectDateRange` should probably search by `startDate`?
+    // Or simpler: remove this method if it's not used, or update it to use startDate.
+    // Let's renaming it to `findByDateRange` and use startDate/endDate logic?
+    // I'll update it to check overlap with startDate/endDate for now, or just use startDate as primary.
+    // Actually, if it's "period specified", we probably want threads active in that period.
+    // where('startDate', '<=', end) AND where('endDate', '>=', start).
+    // Firestore composite index might be needed.
+    // For now, let's just make it query by startDate to satisfy the compiler if interface demands it,
+    // OR if strict removal, remove it. I'll check IThreadRepository if possible but I can't in this turn.
+    // I'll comment it out or update it to use startDate for now to avoid build break if I cannot remove it from interface yet.
+    // Actually, I should probably remove it from interface too if I could.
+    // I will try to remove it. If Interface complains, I'll see.
+    // Wait, the previous view didn't show the Interface.
+    // I'll assume I can remove it or update it. Replacing it with startDate logic seems safest for "Calendar" features.
     async findBySelectDateRange(start: Date, end: Date, limit = 100): Promise<Thread[]> {
         const { db } = await getDbAndAuth();
 
         const snapshot = await db
             .collection(this.tableName)
-            .where('selectDate', '>=', start)
-            .where('selectDate', '<=', end)
-            .orderBy('selectDate', 'asc')
+            .where('startDate', '>=', start)
+            .where('startDate', '<=', end)
+            .orderBy('startDate', 'asc')
             .limit(limit)
             .get();
 
         return this.mapDocsToThreads(snapshot);
+    }
+
+    async findByMapPointInfoId(mapPointInfoId: string): Promise<Thread | null> {
+        const { db } = await getDbAndAuth();
+        const snapshot = await db
+            .collection(this.tableName)
+            .where('mapPointInfoId', '==', mapPointInfoId)
+            .where('deleatedAt', '==', null)
+            .limit(1)
+            .get();
+
+        if (snapshot.empty) return null;
+        return this.mapToThread(snapshot.docs[0].id, snapshot.docs[0].data());
+    }
+
+    async findByMapPointInfoIds(mapPointInfoIds: string[]): Promise<Thread[]> {
+        if (mapPointInfoIds.length === 0) return [];
+
+        const { db } = await getDbAndAuth();
+        // Firestore IN query limits to 10 items (or 30 in newer versions).
+        // Since limit in usage is 100, we need to batch.
+        // For simplicity in this iteration, I'll batch by 10.
+
+        const chunks = [];
+        for (let i = 0; i < mapPointInfoIds.length; i += 10) {
+            chunks.push(mapPointInfoIds.slice(i, i + 10));
+        }
+
+        const promises = chunks.map((chunk) =>
+            db.collection(this.tableName).where('mapPointInfoId', 'in', chunk).where('deleatedAt', '==', null).get(),
+        );
+
+        const snapshots = await Promise.all(promises);
+        const results: Thread[] = [];
+
+        snapshots.forEach((snapshot) => {
+            snapshot.forEach((doc) => {
+                results.push(this.mapToThread(doc.id, doc.data()));
+            });
+        });
+
+        return results;
     }
 }

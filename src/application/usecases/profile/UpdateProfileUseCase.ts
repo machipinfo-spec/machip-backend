@@ -5,7 +5,7 @@ import { UserId } from '../../../domain/value-object/users/UserId';
 import { UserName } from '../../../domain/value-object/users/UserName';
 import { Introduction } from '../../../domain/value-object/profile/Introduction';
 import { ImageUrl } from '../../../domain/value-object/users/ImageUrl';
-import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
+import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
 import { ProfileUrl } from '../../../domain/value-object/profile/ProfileUrl';
 
 export interface UpdateProfileRequest {

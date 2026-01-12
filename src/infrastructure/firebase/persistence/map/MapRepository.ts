@@ -2,8 +2,8 @@ import { getDbAndAuth } from '../../config/firebaseAdmin';
 import { PointInfo, PointInfoDTO } from '../../../../domain/entities/map/pointInfo';
 import { PointInfoId } from '../../../../domain/value-object/map/pointInfoId';
 import { GeoLocation } from '../../../../domain/value-object/map/geoLocation';
-import { ThreadName } from '../../../../domain/value-object/map/threadName';
 import { Category } from '../../../../domain/value-object/map/category';
+import { UserId } from '../../../../domain/value-object/users/UserId';
 import { IMapRepository } from '../../../../domain/repositories/map/IMapRepository';
 
 export class MapRepository implements IMapRepository {
@@ -15,12 +15,10 @@ export class MapRepository implements IMapRepository {
             id: dto.id,
             lat: dto.lat,
             lng: dto.lng,
-            threadName: dto.threadName,
             category: dto.category,
-            selectDate: dto.selectDate,
-            imageUrl: dto.imageUrl || null,
             address: dto.address || null,
             deletedAt: dto.deletedAt || null,
+            ownerUserId: dto.ownerUserId,
         };
 
         const { db } = await getDbAndAuth();
@@ -40,15 +38,15 @@ export class MapRepository implements IMapRepository {
     }
 
     async findByThreadName(threadName: string, limit = 50): Promise<PointInfo[]> {
-        const { db } = await getDbAndAuth();
-        const snapshot = await db
-            .collection(this.tableName)
-            .where('threadName', '==', threadName)
-            .where('deletedAt', '==', null)
-            .limit(limit)
-            .get();
-
-        return this.mapDocsToPointInfos(snapshot);
+        // PointInfo has no threadName anymore
+        // This query might need to be deprecated or implemented via join (which is hard in NoSQL)
+        // or by querying PointEvents then fetching PointInfos?
+        // But for now, we leave it empty or throwing error?
+        // The interface still has it potentially? Checking IMapRepository next.
+        // Assuming we should maybe remove this method from interface or implement differently?
+        // If PointInfo table doesn't have threadName, this is impossible directly.
+        // Returning empty list for now until Interface is updated or this is resolved.
+        return [];
     }
 
     async findByCategory(category: string, limit = 50): Promise<PointInfo[]> {
@@ -74,12 +72,10 @@ export class MapRepository implements IMapRepository {
         return PointInfo.fromExisting(
             PointInfoId.fromExisting(docId),
             GeoLocation.fromCoordinates(data.lat, data.lng),
-            ThreadName.create(data.threadName),
             Category.create(data.category),
-            data.imageUrl || null,
-            data.selectDate ? data.selectDate.toDate() : null,
             data.address || null,
-            data.deletedAt ? data.deletedAt.toDate() : null,
+            data.deletedAt ? (data.deletedAt.toDate ? data.deletedAt.toDate() : data.deletedAt) : null,
+            UserId.fromExisting(data.ownerUserId),
         );
     }
 

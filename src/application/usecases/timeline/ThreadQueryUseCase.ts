@@ -2,9 +2,10 @@ import { Thread } from '../../../domain/entities/timeline/thread';
 import { IThreadRepository } from '../../../domain/repositories/timeline/IThreadRepository';
 import { UserId } from '../../../domain/value-object/users/UserId';
 import { Profile } from '../../../domain/entities/profile/profile';
-import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
+import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository'; // Removed .ts extension
+import { IPointEventRepository } from '../../../domain/repositories/map/IPointEventRepository';
 
-export interface ThreadItem {
+export interface ThreadItemCommon {
     threadId: string;
     threadName: string;
     createdAt: Date;
@@ -17,20 +18,48 @@ export interface ThreadItem {
     parentThreadId: string | null;
     childThreadIds: string[];
     mapPointInfoId: string | null;
-    imageUrl: string | null;
-    selectDate: Date | null;
     childThreadCount: number;
-    address: string | null;
 }
+
+export interface EventContent {
+    startDate: Date;
+    endDate: Date;
+    detail: string | null;
+    url: string | null;
+    imageUrl: string | null;
+}
+
+export interface ChatContent {
+    imageUrl: string | null;
+}
+
+export interface ThreadItemEvent extends ThreadItemCommon {
+    category: 'event';
+    categoryContent: EventContent;
+}
+
+export interface ThreadItemChat extends ThreadItemCommon {
+    category: 'chat';
+    categoryContent: ChatContent;
+}
+
+export type ThreadItem = ThreadItemEvent | ThreadItemChat;
 
 export interface ThreadQueryResult {
     threads: ThreadItem[];
 }
 
 export class ThreadQueryUseCase {
-    constructor(private threadRepository: IThreadRepository, private profileRepository: IProfileRepository) {}
+    constructor(
+        private threadRepository: IThreadRepository,
+        private profileRepository: IProfileRepository,
+        private pointEventRepository: IPointEventRepository,
+    ) {}
 
-    private async convertToThreadItem(thread: Thread): Promise<ThreadItem> {
+    private async convertToThreadItem(
+        thread: Thread,
+        preFetchedEvent?: import('../../../domain/entities/map/PointEvent').PointEvent,
+    ): Promise<ThreadItem> {
         const p = thread.toPrimitives();
 
         let ownerUserProfile: Profile | null = null;
@@ -40,7 +69,7 @@ export class ThreadQueryUseCase {
             console.error(`Failed to fetch profile for user ${p.ownerUserId}`, e);
         }
 
-        return {
+        const common: ThreadItemCommon = {
             threadId: p.id,
             threadName: p.threadName,
             createdAt: p.createdAt,
@@ -53,21 +82,84 @@ export class ThreadQueryUseCase {
             parentThreadId: p.parentThreadId,
             childThreadIds: p.childThreadIds,
             mapPointInfoId: p.mapPointInfoId,
-            imageUrl: p.imageUrl,
-            selectDate: p.selectDate,
             childThreadCount: p.childThreadIds.length,
-            address: p.address,
+        };
+
+        if (preFetchedEvent) {
+            return {
+                ...common,
+                category: 'event',
+                categoryContent: {
+                    startDate: preFetchedEvent.getStartDate(),
+                    endDate: preFetchedEvent.getEndDate(),
+                    detail: preFetchedEvent.getDetail(),
+                    url: preFetchedEvent.getUrl(),
+                    imageUrl: preFetchedEvent.getImageUrl(),
+                },
+            };
+        } else if (p.mapPointInfoId) {
+            try {
+                const pointEvent = await this.pointEventRepository.findByPointInfoId(p.mapPointInfoId);
+                if (pointEvent) {
+                    return {
+                        ...common,
+                        category: 'event',
+                        categoryContent: {
+                            startDate: pointEvent.getStartDate(),
+                            endDate: pointEvent.getEndDate(),
+                            detail: pointEvent.getDetail(),
+                            url: pointEvent.getUrl(),
+                            imageUrl: pointEvent.getImageUrl(),
+                        },
+                    };
+                }
+            } catch (e) {
+                console.warn(`Failed to fetch point event for ${p.mapPointInfoId}`, e);
+            }
+        }
+
+        return {
+            ...common,
+            category: 'chat',
+            categoryContent: {
+                imageUrl: p.imageUrl,
+            },
         };
     }
 
     async execute(start: Date, end: Date, limit = 100): Promise<ThreadQueryResult> {
-        // 範囲クエリで thread を取得
-        const threads = await this.threadRepository.findBySelectDateRange(start, end, limit);
+        // 1. PointEvent を日付範囲で検索 (startDateが範囲内のもの)
+        const events = await this.pointEventRepository.findByDateRange(start, end, limit);
 
-        // mapToThreadItem の並列処理
+        if (events.length === 0) {
+            return { threads: [] };
+        }
+
+        // 2. 対応する PointInfoId のリストを作成
+        const pointInfoIds = events.map((e) => e.getPointInfoId().getValue());
+        // 重複排除 (念のため)
+        const uniquePointInfoIds = [...new Set(pointInfoIds)];
+
+        // 3. Thread を mapPointInfoId で検索
+        const threads = await this.threadRepository.findByMapPointInfoIds(uniquePointInfoIds);
+
+        // 4. PointEvent と Thread を紐付け (Map作成)
+        const eventMap = new Map<string, import('../../../domain/entities/map/PointEvent').PointEvent>();
+        events.forEach((e) => {
+            eventMap.set(e.getPointInfoId().getValue(), e);
+        });
+
+        // 5. ThreadItem に変換 (preFetchedEvent を使用)
         const threadItems: ThreadItem[] = await Promise.all(
-            threads.map(async (t) => await this.convertToThreadItem(t)),
+            threads.map(async (t) => {
+                const p = t.toPrimitives();
+                const event = p.mapPointInfoId ? eventMap.get(p.mapPointInfoId) : undefined;
+                return await this.convertToThreadItem(t, event);
+            }),
         );
+
+        // 日付順にソート (ThreadResultの要件によるが、PointEventでソートされていてもThread取得順序が保証されないため)
+        // threadItems.sort((a, b) => ...); // 必要であれば実装
 
         return {
             threads: threadItems,
