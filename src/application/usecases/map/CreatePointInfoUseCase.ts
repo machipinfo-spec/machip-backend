@@ -90,29 +90,26 @@ export class CreatePointInfoUseCase {
                     request.url || null,
                 );
                 await this.pointEventRepository.save(pointEvent);
+
+                await this.messageSendingService.sendMessage({
+                    type: 'newEvent',
+                    subject: '新しいイベントが登録されました',
+                    // NewEventMessageRequest
+                    content: {
+                        pointInfoId: pointEvent.getId().getValue(),
+                        ownerUserId: request.userId,
+                        address: address || '',
+                        title: threadName.getValue(),
+                        date: startDate, // Use startDate instead of selectDate
+                        detail: request.detail,
+                        url: request.url,
+                        period:
+                            startDate && endDate ? `${startDate.toISOString()} ~ ${endDate.toISOString()}` : undefined, // 簡易フォーマット
+                    },
+                    senderUserId: UserId.SYSTEM_ID.getValue(),
+                    deliveryType: 'all',
+                });
             }
-
-            // 通知を送る
-            const startDate = request.startDate ? new Date(request.startDate) : null;
-            const endDate = request.endDate ? new Date(request.endDate) : null;
-
-            await this.messageSendingService.sendMessage({
-                type: 'newEvent',
-                subject: '新しいイベントが登録されました',
-                // NewEventMessageRequest
-                content: {
-                    pointInfoId: pointInfoId.getValue(),
-                    ownerUserId: request.userId,
-                    address: address || '',
-                    title: threadName.getValue(),
-                    date: startDate, // Use startDate instead of selectDate
-                    detail: request.detail,
-                    url: request.url,
-                    period: startDate && endDate ? `${startDate.toISOString()} ~ ${endDate.toISOString()}` : undefined, // 簡易フォーマット
-                },
-                senderUserId: UserId.SYSTEM_ID.getValue(),
-                deliveryType: 'all',
-            });
 
             return {
                 pointInfo,

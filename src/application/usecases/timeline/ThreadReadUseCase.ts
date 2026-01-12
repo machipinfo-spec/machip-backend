@@ -5,7 +5,7 @@ import { Profile } from '../../../domain/entities/profile/profile';
 import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
 import { IPointEventRepository } from '../../../domain/repositories/map/IPointEventRepository';
 
-export interface ThreadItem {
+export interface ThreadItemCommon {
     threadId: string;
     threadName: string;
     createdAt: Date;
@@ -18,11 +18,32 @@ export interface ThreadItem {
     parentThreadId: string | null;
     childThreadIds: string[];
     mapPointInfoId: string | null;
-    imageUrl: string | null;
     childThreadCount: number;
-    startDate: Date | null;
-    endDate: Date | null;
 }
+
+export interface EventContent {
+    startDate: Date;
+    endDate: Date;
+    detail: string | null;
+    url: string | null;
+    imageUrl: string | null;
+}
+
+export interface ChatContent {
+    imageUrl: string | null;
+}
+
+export interface ThreadItemEvent extends ThreadItemCommon {
+    category: 'event';
+    categoryContent: EventContent;
+}
+
+export interface ThreadItemChat extends ThreadItemCommon {
+    category: 'chat';
+    categoryContent: ChatContent;
+}
+
+export type ThreadItem = ThreadItemEvent | ThreadItemChat;
 
 export interface ThreadReadResult {
     thread: ThreadItem;
@@ -47,21 +68,7 @@ export class ThreadReadUseCase {
             console.error(`Failed to fetch profile for user ${p.ownerUserId}`, e);
         }
 
-        let startDate: Date | null = null;
-        let endDate: Date | null = null;
-        if (p.mapPointInfoId) {
-            try {
-                const pointEvent = await this.pointEventRepository.findByPointInfoId(p.mapPointInfoId);
-                if (pointEvent) {
-                    startDate = pointEvent.getStartDate();
-                    endDate = pointEvent.getEndDate();
-                }
-            } catch (e) {
-                console.warn(`Failed to fetch point event for ${p.mapPointInfoId}`, e);
-            }
-        }
-
-        return {
+        const common: ThreadItemCommon = {
             threadId: p.id,
             threadName: p.threadName,
             createdAt: p.createdAt,
@@ -74,10 +81,44 @@ export class ThreadReadUseCase {
             parentThreadId: p.parentThreadId,
             childThreadIds: p.childThreadIds,
             mapPointInfoId: p.mapPointInfoId,
-            imageUrl: p.imageUrl,
             childThreadCount: p.childThreadIds.length,
-            startDate,
-            endDate,
+        };
+
+        if (p.mapPointInfoId) {
+            try {
+                const pointEvent = await this.pointEventRepository.findByPointInfoId(p.mapPointInfoId);
+                if (pointEvent) {
+                    return {
+                        ...common,
+                        category: 'event',
+                        categoryContent: {
+                            startDate: pointEvent.getStartDate(),
+                            endDate: pointEvent.getEndDate(),
+                            detail: pointEvent.getDetail(),
+                            url: pointEvent.getUrl(),
+                            imageUrl: pointEvent.getImageUrl(), // Prefer event image if available, else null? Or should we fallback to thread image?
+                            // The user asked to move imageUrl. Assuming PointEvent has imageUrl.
+                            // If PointEvent.imageUrl is null, maybe fallback to Thread.imageUrl?
+                            // Logic: PointEvent usually has the specific image. Thread.imageUrl was a copy or fallback.
+                            // Let's use pointEvent.getImageUrl().
+                            // Wait, Thread entity had imageUrl too.
+                            // If it's an event, the image usually comes from the event data.
+                            // Let's use pointEvent.getImageUrl().
+                        },
+                    };
+                }
+            } catch (e) {
+                console.warn(`Failed to fetch point event for ${p.mapPointInfoId}`, e);
+            }
+        }
+
+        // Chat or fallback
+        return {
+            ...common,
+            category: 'chat',
+            categoryContent: {
+                imageUrl: p.imageUrl,
+            },
         };
     }
 

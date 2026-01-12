@@ -5,7 +5,7 @@ import { UserId } from '../../../domain/value-object/users/UserId';
 import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
 import { IPointEventRepository } from '../../../domain/repositories/map/IPointEventRepository';
 
-export interface TimelineThreadItem {
+export interface TimelineThreadItemCommon {
     threadId: string;
     threadName: string;
     createdAt: Date;
@@ -18,11 +18,32 @@ export interface TimelineThreadItem {
     parentThreadId: string | null;
     childThreadIds: string[];
     mapPointInfoId: string | null;
-    imageUrl: string | null;
     childThreadCount: number;
-    startDate: Date | null;
-    endDate: Date | null;
 }
+
+export interface EventContent {
+    startDate: Date;
+    endDate: Date;
+    detail: string | null;
+    url: string | null;
+    imageUrl: string | null;
+}
+
+export interface ChatContent {
+    imageUrl: string | null;
+}
+
+export interface TimelineThreadItemEvent extends TimelineThreadItemCommon {
+    category: 'event';
+    categoryContent: EventContent;
+}
+
+export interface TimelineThreadItemChat extends TimelineThreadItemCommon {
+    category: 'chat';
+    categoryContent: ChatContent;
+}
+
+export type TimelineThreadItem = TimelineThreadItemEvent | TimelineThreadItemChat;
 
 export interface TimelineReadResult {
     threads: TimelineThreadItem[];
@@ -51,21 +72,7 @@ export class TimelineReadUseCase {
                     console.error(`Failed to fetch profile for user ${primitives.ownerUserId}:`, error);
                 }
 
-                let startDate: Date | null = null;
-                let endDate: Date | null = null;
-                if (primitives.mapPointInfoId) {
-                    try {
-                        const pointEvent = await this.pointEventRepository.findByPointInfoId(primitives.mapPointInfoId);
-                        if (pointEvent) {
-                            startDate = pointEvent.getStartDate();
-                            endDate = pointEvent.getEndDate();
-                        }
-                    } catch (e) {
-                        console.warn(`Failed to fetch point event for ${primitives.mapPointInfoId}`, e);
-                    }
-                }
-
-                return {
+                const common: TimelineThreadItemCommon = {
                     threadId: primitives.id,
                     threadName: primitives.threadName,
                     createdAt: primitives.createdAt,
@@ -79,10 +86,36 @@ export class TimelineReadUseCase {
                     parentThreadId: primitives.parentThreadId,
                     childThreadIds: primitives.childThreadIds,
                     mapPointInfoId: primitives.mapPointInfoId,
-                    imageUrl: primitives.imageUrl,
                     childThreadCount: primitives.childThreadIds.length,
-                    startDate,
-                    endDate,
+                };
+
+                if (primitives.mapPointInfoId) {
+                    try {
+                        const pointEvent = await this.pointEventRepository.findByPointInfoId(primitives.mapPointInfoId);
+                        if (pointEvent) {
+                            return {
+                                ...common,
+                                category: 'event',
+                                categoryContent: {
+                                    startDate: pointEvent.getStartDate(),
+                                    endDate: pointEvent.getEndDate(),
+                                    detail: pointEvent.getDetail(),
+                                    url: pointEvent.getUrl(),
+                                    imageUrl: pointEvent.getImageUrl(),
+                                },
+                            };
+                        }
+                    } catch (e) {
+                        console.warn(`Failed to fetch point event for ${primitives.mapPointInfoId}`, e);
+                    }
+                }
+
+                return {
+                    ...common,
+                    category: 'chat',
+                    categoryContent: {
+                        imageUrl: primitives.imageUrl,
+                    },
                 };
             }),
         );
@@ -118,21 +151,7 @@ export class TimelineReadByUserUseCase {
             rootThreads.map(async (thread) => {
                 const primitives = thread.toPrimitives();
 
-                let startDate: Date | null = null;
-                let endDate: Date | null = null;
-                if (primitives.mapPointInfoId) {
-                    try {
-                        const pointEvent = await this.pointEventRepository.findByPointInfoId(primitives.mapPointInfoId);
-                        if (pointEvent) {
-                            startDate = pointEvent.getStartDate();
-                            endDate = pointEvent.getEndDate();
-                        }
-                    } catch (e) {
-                        console.warn(`Failed to fetch point event for ${primitives.mapPointInfoId}`, e);
-                    }
-                }
-
-                return {
+                const common: TimelineThreadItemCommon = {
                     threadId: primitives.id,
                     threadName: primitives.threadName,
                     createdAt: primitives.createdAt,
@@ -146,10 +165,36 @@ export class TimelineReadByUserUseCase {
                     parentThreadId: primitives.parentThreadId,
                     childThreadIds: primitives.childThreadIds,
                     mapPointInfoId: primitives.mapPointInfoId,
-                    imageUrl: primitives.imageUrl,
                     childThreadCount: primitives.childThreadIds.length,
-                    startDate,
-                    endDate,
+                };
+
+                if (primitives.mapPointInfoId) {
+                    try {
+                        const pointEvent = await this.pointEventRepository.findByPointInfoId(primitives.mapPointInfoId);
+                        if (pointEvent) {
+                            return {
+                                ...common,
+                                category: 'event',
+                                categoryContent: {
+                                    startDate: pointEvent.getStartDate(),
+                                    endDate: pointEvent.getEndDate(),
+                                    detail: pointEvent.getDetail(),
+                                    url: pointEvent.getUrl(),
+                                    imageUrl: pointEvent.getImageUrl(),
+                                },
+                            };
+                        }
+                    } catch (e) {
+                        console.warn(`Failed to fetch point event for ${primitives.mapPointInfoId}`, e);
+                    }
+                }
+
+                return {
+                    ...common,
+                    category: 'chat',
+                    categoryContent: {
+                        imageUrl: primitives.imageUrl,
+                    },
                 };
             }),
         );
