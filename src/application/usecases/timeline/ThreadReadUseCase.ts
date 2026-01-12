@@ -2,7 +2,8 @@ import { Thread } from '../../../domain/entities/timeline/thread';
 import { IThreadRepository } from '../../../domain/repositories/timeline/IThreadRepository';
 import { UserId } from '../../../domain/value-object/users/UserId';
 import { Profile } from '../../../domain/entities/profile/profile';
-import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
+import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
+import { IPointEventRepository } from '../../../domain/repositories/map/IPointEventRepository';
 
 export interface ThreadItem {
     threadId: string;
@@ -18,9 +19,9 @@ export interface ThreadItem {
     childThreadIds: string[];
     mapPointInfoId: string | null;
     imageUrl: string | null;
-    selectDate: Date | null;
     childThreadCount: number;
-    address: string | null;
+    startDate: Date | null;
+    endDate: Date | null;
 }
 
 export interface ThreadReadResult {
@@ -30,7 +31,11 @@ export interface ThreadReadResult {
 }
 
 export class ThreadReadUseCase {
-    constructor(private threadRepository: IThreadRepository, private profileRepository: IProfileRepository) {}
+    constructor(
+        private threadRepository: IThreadRepository,
+        private profileRepository: IProfileRepository,
+        private pointEventRepository: IPointEventRepository,
+    ) {}
 
     private async convertToThreadItem(thread: Thread): Promise<ThreadItem> {
         const p = thread.toPrimitives();
@@ -40,6 +45,20 @@ export class ThreadReadUseCase {
             ownerUserProfile = await this.profileRepository.findByUserId(UserId.fromExisting(p.ownerUserId));
         } catch (e) {
             console.error(`Failed to fetch profile for user ${p.ownerUserId}`, e);
+        }
+
+        let startDate: Date | null = null;
+        let endDate: Date | null = null;
+        if (p.mapPointInfoId) {
+            try {
+                const pointEvent = await this.pointEventRepository.findByPointInfoId(p.mapPointInfoId);
+                if (pointEvent) {
+                    startDate = pointEvent.getStartDate();
+                    endDate = pointEvent.getEndDate();
+                }
+            } catch (e) {
+                console.warn(`Failed to fetch point event for ${p.mapPointInfoId}`, e);
+            }
         }
 
         return {
@@ -56,9 +75,9 @@ export class ThreadReadUseCase {
             childThreadIds: p.childThreadIds,
             mapPointInfoId: p.mapPointInfoId,
             imageUrl: p.imageUrl,
-            selectDate: p.selectDate,
             childThreadCount: p.childThreadIds.length,
-            address: p.address,
+            startDate,
+            endDate,
         };
     }
 

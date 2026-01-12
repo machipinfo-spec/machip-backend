@@ -5,7 +5,7 @@ import { IMessageBroadcastRepository } from '../../../../domain/repositories/inb
 import { IMessageRepository } from '../../../../domain/repositories/inbox/IMessageRepository';
 import { IUserMessageRepository } from '../../../../domain/repositories/inbox/IUserMessageRepository';
 import { Logger } from '../../../../shared/logger';
-import { IProfileRepository } from '../../../../domain/repositories/profile/IProfileRepository.ts';
+import { IProfileRepository } from '../../../../domain/repositories/profile/IProfileRepository';
 import { ProfileRepository } from '../profile/ProfileRepository';
 
 export class InboxRepositoryModule {

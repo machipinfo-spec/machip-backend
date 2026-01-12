@@ -1,12 +1,16 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { MapRepository } from '../../../infrastructure/firebase/persistence/map/MapRepository';
+import { ThreadRepository } from '../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
+import { PointEventRepository } from '../../../infrastructure/firebase/persistence/map/PointEventRepository';
 import { GetPointInfoListUseCase } from '../../../application/usecases/map/GetPointInfoListUseCase';
 import { HandlerUtil } from '../util';
 import { GetUserUseCase } from '../../../application/usecases/user/GetUserUseCase';
 import { UserRepository } from '../../../infrastructure/firebase/persistence/user/UserRepository';
 
 const mapRepository = new MapRepository();
-const useCase = new GetPointInfoListUseCase(mapRepository);
+const threadRepository = new ThreadRepository();
+const pointEventRepository = new PointEventRepository();
+const useCase = new GetPointInfoListUseCase(mapRepository, threadRepository, pointEventRepository);
 const handlerUtil = new HandlerUtil();
 const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
@@ -25,7 +29,7 @@ interface GetPointInfoListResponse {
     threadName: string;
     category: string;
     imageUrl: string | null;
-    selectDate: Date | null;
+    // selectDate removed
 }
 
 /**

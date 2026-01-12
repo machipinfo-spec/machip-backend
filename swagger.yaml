@@ -52,6 +52,72 @@ components:
           type: string
           format: date-time
           nullable: true
+        startDate:
+          type: string
+          format: date-time
+          nullable: true
+        endDate:
+          type: string
+          format: date-time
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+        url:
+          type: string
+          nullable: true
+
+    EventPoint:
+      type: object
+      properties:
+        id:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        threadName:
+          type: string
+        category:
+          type: string
+        threadId:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+          format: date-time
+          nullable: true
+        endDate:
+          type: string
+          format: date-time
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+        url:
+          type: string
+          nullable: true
+
+    ChatPoint:
+      type: object
+      properties:
+        id:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        threadName:
+          type: string
+        category:
+          type: string
+        threadId:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
 
     Thread:
       type: object
@@ -63,6 +129,14 @@ components:
         createdAt:
           type: string
           format: date-time
+        startDate:
+          type: string
+          format: date-time
+          nullable: true
+        endDate:
+          type: string
+          format: date-time
+          nullable: true
         ownerUserId:
           type: string
         parentThreadId:
@@ -267,10 +341,13 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PointInfo'
+                  oneOf:
+                    - $ref: '#/components/schemas/EventPoint'
+                    - $ref: '#/components/schemas/ChatPoint'
 
+  /map/event:
     post:
-      summary: Create Point Info
+      summary: Create Event Point
       security:
         - CognitoAuthorizer: []
       requestBody:
@@ -279,7 +356,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [lat, lng, threadName, category]
+              required: [lat, lng, threadName, startDate, endDate]
               properties:
                 lat:
                   type: number
@@ -287,20 +364,54 @@ paths:
                   type: number
                 threadName:
                   type: string
-                category:
-                  type: string
                 imageBase64:
                   type: string
-                selectedDate:
+                startDate:
                   type: string
                   format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+                detail:
+                  type: string
+                url:
+                  type: string
       responses:
         '201':
-          description: Point created
+          description: Event Point created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PointInfo'
+                $ref: '#/components/schemas/EventPoint'
+
+  /map/chat:
+    post:
+      summary: Create Chat Point
+      security:
+        - CognitoAuthorizer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lat, lng, threadName]
+              properties:
+                lat:
+                  type: number
+                lng:
+                  type: number
+                threadName:
+                  type: string
+                imageBase64:
+                  type: string
+      responses:
+        '201':
+          description: Chat Point created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatPoint'
 
   /timeline:
     get:

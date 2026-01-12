@@ -2,7 +2,8 @@ import { Thread } from '../../../domain/entities/timeline/thread';
 import { Profile } from '../../../domain/entities/profile/profile';
 import { IThreadRepository } from '../../../domain/repositories/timeline/IThreadRepository';
 import { UserId } from '../../../domain/value-object/users/UserId';
-import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
+import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
+import { IPointEventRepository } from '../../../domain/repositories/map/IPointEventRepository';
 
 export interface TimelineThreadItem {
     threadId: string;
@@ -18,9 +19,9 @@ export interface TimelineThreadItem {
     childThreadIds: string[];
     mapPointInfoId: string | null;
     imageUrl: string | null;
-    selectDate: Date | null;
     childThreadCount: number;
-    address: string | null;
+    startDate: Date | null;
+    endDate: Date | null;
 }
 
 export interface TimelineReadResult {
@@ -29,17 +30,18 @@ export interface TimelineReadResult {
 }
 
 export class TimelineReadUseCase {
-    constructor(private threadRepository: IThreadRepository, private profileRepository: IProfileRepository) {}
+    constructor(
+        private threadRepository: IThreadRepository,
+        private profileRepository: IProfileRepository,
+        private pointEventRepository: IPointEventRepository,
+    ) {}
 
     async execute(limit?: number, offset?: number): Promise<TimelineReadResult> {
-        // トップレベル(ルート)スレッドを取得
         const rootThreads = await this.threadRepository.findRootThreads(limit, offset);
 
-        // TimelineThreadItem形式に変換(プロフィール情報を並行取得)
         const threads: TimelineThreadItem[] = await Promise.all(
             rootThreads.map(async (thread) => {
                 const primitives = thread.toPrimitives();
-                // オーナーのプロフィール情報を取得
                 let ownerUserProfile: Profile | null = null;
                 try {
                     ownerUserProfile = await this.profileRepository.findByUserId(
@@ -47,6 +49,20 @@ export class TimelineReadUseCase {
                     );
                 } catch (error) {
                     console.error(`Failed to fetch profile for user ${primitives.ownerUserId}:`, error);
+                }
+
+                let startDate: Date | null = null;
+                let endDate: Date | null = null;
+                if (primitives.mapPointInfoId) {
+                    try {
+                        const pointEvent = await this.pointEventRepository.findByPointInfoId(primitives.mapPointInfoId);
+                        if (pointEvent) {
+                            startDate = pointEvent.getStartDate();
+                            endDate = pointEvent.getEndDate();
+                        }
+                    } catch (e) {
+                        console.warn(`Failed to fetch point event for ${primitives.mapPointInfoId}`, e);
+                    }
                 }
 
                 return {
@@ -64,9 +80,9 @@ export class TimelineReadUseCase {
                     childThreadIds: primitives.childThreadIds,
                     mapPointInfoId: primitives.mapPointInfoId,
                     imageUrl: primitives.imageUrl,
-                    selectDate: primitives.selectDate,
                     childThreadCount: primitives.childThreadIds.length,
-                    address: primitives.address,
+                    startDate,
+                    endDate,
                 };
             }),
         );
@@ -79,16 +95,16 @@ export class TimelineReadUseCase {
 }
 
 export class TimelineReadByUserUseCase {
-    constructor(private threadRepository: IThreadRepository, private profileRepository: IProfileRepository) {}
+    constructor(
+        private threadRepository: IThreadRepository,
+        private profileRepository: IProfileRepository,
+        private pointEventRepository: IPointEventRepository,
+    ) {}
 
     async execute(ownerUserId: string, limit?: number, offset?: number): Promise<TimelineReadResult> {
-        // 指定ユーザーのスレッドを取得
         const userThreads = await this.threadRepository.findByOwnerUserId(ownerUserId, limit, offset);
-
-        // トップレベルのスレッドのみをフィルタリング
         const rootThreads = userThreads.filter((thread) => !thread.hasParent());
 
-        // オーナーのプロフィール情報を一度だけ取得(全スレッドで同じユーザー)
         let ownerUserProfile: Profile | null = null;
         if (ownerUserId) {
             try {
@@ -98,29 +114,45 @@ export class TimelineReadByUserUseCase {
             }
         }
 
-        // TimelineThreadItem形式に変換
-        const threads: TimelineThreadItem[] = rootThreads.map((thread) => {
-            const primitives = thread.toPrimitives();
-            return {
-                threadId: primitives.id,
-                threadName: primitives.threadName,
-                createdAt: primitives.createdAt,
-                ownerUserId: primitives.ownerUserId,
-                ownerUserProfile: {
-                    userId: ownerUserProfile?.userId.getValue() || null,
-                    userName: ownerUserProfile?.userName.getValue() || '存在しないユーザー',
-                    imageUrl:
-                        ownerUserProfile?.imageUrl.getValue() || `${process.env.BLOB_BASE_URL}/profile/default.png`,
-                },
-                parentThreadId: primitives.parentThreadId,
-                childThreadIds: primitives.childThreadIds,
-                mapPointInfoId: primitives.mapPointInfoId,
-                imageUrl: primitives.imageUrl,
-                selectDate: primitives.selectDate,
-                childThreadCount: primitives.childThreadIds.length,
-                address: primitives.address,
-            };
-        });
+        const threads: TimelineThreadItem[] = await Promise.all(
+            rootThreads.map(async (thread) => {
+                const primitives = thread.toPrimitives();
+
+                let startDate: Date | null = null;
+                let endDate: Date | null = null;
+                if (primitives.mapPointInfoId) {
+                    try {
+                        const pointEvent = await this.pointEventRepository.findByPointInfoId(primitives.mapPointInfoId);
+                        if (pointEvent) {
+                            startDate = pointEvent.getStartDate();
+                            endDate = pointEvent.getEndDate();
+                        }
+                    } catch (e) {
+                        console.warn(`Failed to fetch point event for ${primitives.mapPointInfoId}`, e);
+                    }
+                }
+
+                return {
+                    threadId: primitives.id,
+                    threadName: primitives.threadName,
+                    createdAt: primitives.createdAt,
+                    ownerUserId: primitives.ownerUserId,
+                    ownerUserProfile: {
+                        userId: ownerUserProfile?.userId.getValue() || null,
+                        userName: ownerUserProfile?.userName.getValue() || '存在しないユーザー',
+                        imageUrl:
+                            ownerUserProfile?.imageUrl.getValue() || `${process.env.BLOB_BASE_URL}/profile/default.png`,
+                    },
+                    parentThreadId: primitives.parentThreadId,
+                    childThreadIds: primitives.childThreadIds,
+                    mapPointInfoId: primitives.mapPointInfoId,
+                    imageUrl: primitives.imageUrl,
+                    childThreadCount: primitives.childThreadIds.length,
+                    startDate,
+                    endDate,
+                };
+            }),
+        );
 
         return {
             threads,

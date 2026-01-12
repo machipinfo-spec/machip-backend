@@ -1,6 +1,6 @@
 import { IMessageRepository } from '../../../domain/repositories/inbox/IMessageRepository';
 import { IUserMessageRepository } from '../../../domain/repositories/inbox/IUserMessageRepository';
-import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
+import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
 import { UserId } from '../../../domain/value-object/users/UserId';
 import { Logger } from '../../../shared/logger';
 

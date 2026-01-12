@@ -6,11 +6,14 @@ import { UserRepository } from '../../../../infrastructure/firebase/persistence/
 import { HandlerUtil } from '../../util';
 import { ProfileRepository } from '../../../../infrastructure/firebase/persistence/profile/ProfileRepository';
 
+import { PointEventRepository } from '../../../../infrastructure/firebase/persistence/map/PointEventRepository';
+
 const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const threadRepository = new ThreadRepository();
 const profileRepository = new ProfileRepository();
-const threadReadUseCase = new ThreadReadUseCase(threadRepository, profileRepository);
+const pointEventRepository = new PointEventRepository();
+const threadReadUseCase = new ThreadReadUseCase(threadRepository, profileRepository, pointEventRepository);
 const handlerUtil = new HandlerUtil();
 
 const corsHeaders = {

@@ -1,7 +1,7 @@
 // application/usecases/profile/CreateUserProfileUseCase.ts
 
 import { Profile } from '../../../domain/entities/profile/profile';
-import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository.ts';
+import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
 import { Introduction } from '../../../domain/value-object/profile/Introduction';
 import { ProfileUrl } from '../../../domain/value-object/profile/ProfileUrl';
 import { ImageUrl } from '../../../domain/value-object/users/ImageUrl';

@@ -7,11 +7,14 @@ import { UserRepository } from '../../../../infrastructure/firebase/persistence/
 import { HandlerUtil } from '../../util';
 import { ThreadQueryUseCase } from '../../../../application/usecases/timeline/ThreadQueryUseCase';
 
+import { PointEventRepository } from '../../../../infrastructure/firebase/persistence/map/PointEventRepository';
+
 const profileRepository = new ProfileRepository();
 const userRepository = new UserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const threadRepository = new ThreadRepository();
-const threadQueryUseCase = new ThreadQueryUseCase(threadRepository, profileRepository);
+const pointEventRepository = new PointEventRepository();
+const threadQueryUseCase = new ThreadQueryUseCase(threadRepository, profileRepository, pointEventRepository);
 const handlerUtil = new HandlerUtil();
 
 const corsHeaders = {
