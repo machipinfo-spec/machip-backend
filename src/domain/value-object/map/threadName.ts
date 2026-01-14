@@ -7,10 +7,9 @@ export class ThreadName extends ValueObject<string> {
     }
 
     protected validate(): void {
-        if (this.value === null || this.value === undefined || this.value === '') {
-            throw new Error('スレッド名は空にできません');
-        }
-
+        // if (this.value === null || this.value === undefined || this.value === '') {
+        //     throw new Error('スレッド名は空にできません');
+        // }
         // if (this.value.length > 50) {
         //     throw new Error('スレッド名は50文字以内である必要があります');
         // }

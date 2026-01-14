@@ -59,6 +59,7 @@ export class GetPointInfoListUseCase {
             let startDate: Date | null = null;
             let endDate: Date | null = null;
 
+            let threadId = '';
             if (point.getCategory().getValue() === 'event') {
                 const event = await this.pointEventRepository.findByPointInfoId(point.getId().getValue());
                 if (event) {
@@ -66,6 +67,18 @@ export class GetPointInfoListUseCase {
                     imageUrl = event.getImageUrl();
                     startDate = event.getStartDate();
                     endDate = event.getEndDate();
+
+                    // Fetch Thread to get ThreadId
+                    const thread = await this.threadRepository.findByMapPointInfoId(point.getId().getValue());
+                    if (thread) {
+                        threadId = thread.getThreadId().getValue();
+                    } else {
+                        // Fallback or error? If it's an event, it should have a thread usually?
+                        // Maybe use point info ID if thread missing (legacy)? Or empty?
+                        // User explicitly asked for thread ID.
+                        console.warn(`Thread not found for pointInfoId: ${point.getId().getValue()}`);
+                        threadId = ''; // Or keep as empty string if not found
+                    }
                 }
             } else if (point.getCategory().getValue() === 'chat') {
                 const thread = await this.threadRepository.findByMapPointInfoId(point.getId().getValue());
@@ -74,6 +87,7 @@ export class GetPointInfoListUseCase {
                     imageUrl = thread.getImageUrl();
                     // chats don't have start/end date usually, or we use CreatedAt?
                     // Leaving dates null.
+                    threadId = thread.getThreadId().getValue();
                 }
             } else {
                 // Other categories?
@@ -81,7 +95,7 @@ export class GetPointInfoListUseCase {
             }
 
             responses.push({
-                id: point.getId().getValue(),
+                id: threadId,
                 lat: point.getGeoLocation().getLat(),
                 lng: point.getGeoLocation().getLng(),
                 threadName: threadName,

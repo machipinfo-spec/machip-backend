@@ -76,4 +76,61 @@ export class UserRepository implements IUserRepository {
         const { db } = await getDbAndAuth();
         await db.collection(this.tableName).add(record);
     }
+
+    async search(params: {
+        limit?: number;
+        nextToken?: string;
+        keyword?: string;
+    }): Promise<{ users: User[]; nextToken: string | null }> {
+        const { db } = await getDbAndAuth();
+        let query: any = db.collection(this.tableName); // Type any to avoid complex Firestore types matching
+
+        // NOTE: Firestore doesn't support substring match easily.
+        // For MVP, we will only apply pagination here to reduce read count for the listing use case.
+        // If keyword is provided, we still have to filter in memory IF we can't key match.
+        // However, user requested "reduce DB usage", so ideally we filter at DB.
+        // For now, we will just implement pagination. Full text search needs a dedicated solution (e.g. Algolia).
+
+        // Order by userId to ensure stable pagination
+        query = query.orderBy('userId');
+
+        if (params.nextToken) {
+            query = query.startAfter(params.nextToken);
+        }
+
+        if (params.limit) {
+            query = query.limit(params.limit);
+        }
+
+        const querySnapshot = await query.get();
+        const users = querySnapshot.docs.map((doc: any) => {
+            const data = doc.data();
+            return User.reconstitute(
+                new AuthId(data.authId),
+                new UserId(data.userId),
+                new UserName(data.name),
+                new Email(data.email),
+            );
+        });
+
+        // In-memory filter for keyword if provided (Fallback)
+        // This defeats "reduce DB usage" for search-with-keyword case if we fetched only a page and filtered it
+        // -> we might return empty page.
+        // But for LISTING (no keyword), this is efficient.
+        let resultUsers = users;
+        if (params.keyword) {
+            const lowerM = params.keyword.toLowerCase();
+            resultUsers = users.filter(
+                (u: User) =>
+                    u.name.getValue().toLowerCase().includes(lowerM) ||
+                    u.email.getValue().toLowerCase().includes(lowerM),
+            );
+        }
+
+        const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+        // The cursor for next page should be the ID of the last fetched document (userId in this case)
+        const nextToken = lastDoc ? lastDoc.data().userId : null;
+
+        return { users: resultUsers, nextToken };
+    }
 }

@@ -8,5 +8,6 @@ export interface IProfileRepository {
     update(profile: Profile): Promise<void>;
     findByProfileId(profileId: ProfileId): Promise<Profile | null>;
     findByUserId(userId: UserId): Promise<Profile | null>;
+    findByUserIds(userIds: UserId[]): Promise<Profile[]>;
     softDelete(profileId: ProfileId): Promise<void>;
 }

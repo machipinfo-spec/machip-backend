@@ -13,6 +13,11 @@ Parameters:
             - stg
         Default: poc
 
+    LocalAllowedOrigin:
+        Type: String
+        Default: 'http://localhost:3001'
+        Description: 'Allowed Origin for local development (POC)'
+
 Conditions:
     IsStg: !Equals [!Ref Stage, stg]
     IsPoc: !Equals [!Ref Stage, poc]
@@ -52,11 +57,29 @@ Resources:
                 AllowMethods: "'GET,PUT,POST,DELETE,OPTIONS'"
                 AllowOrigin: !If
                     - IsStg
-                    - "'https://tetra-web-chi.vercel.app'"
-                    - "'http://localhost:3000'"
+                    - "'*'" # TODO: 本番環境に変更する
+                    - "'https://tetra-web-chi.vercel.app','http://localhost:3000'"
                 AllowHeaders: "'Content-Type,Authorization'"
                 AllowCredentials: true
 
+    TetraAdmin:
+        Type: AWS::Serverless::Api
+        Properties:
+            Name: !If
+                - IsStg
+                - 'tetra-admin-stg'
+                - 'tetra-admin-poc'
+            StageName: Prod
+            Auth:
+                AddDefaultAuthorizerToCorsPreflight: false
+            Cors:
+                AllowMethods: "'GET,PUT,POST,DELETE,OPTIONS'"
+                AllowOrigin: !If
+                    - IsStg
+                    - "'*'" # TODO: 本番環境に変更する
+                    - !Sub "'${LocalAllowedOrigin}'"
+                AllowHeaders: "'Content-Type,Authorization'"
+                AllowCredentials: true
 
     # 画像保管用S3バケット
     ImageBucket:
@@ -73,11 +96,12 @@ Resources:
                 RestrictPublicBuckets: true
             CorsConfiguration:
                 CorsRules:
-                    - AllowedOrigins:
+                    - AllowedOrigins: !Split
+                          - ','
                           - !If
-                            - IsStg
+                            - IsPoc
+                            - 'https://tetra-web-chi.vercel.app,http://localhost:3000,http://localhost:3001'
                             - 'https://tetra-web-chi.vercel.app'
-                            - 'http://localhost:3000'
                       AllowedMethods:
                           - GET
                           - PUT
@@ -125,14 +149,14 @@ Resources:
             MemorySize: 512
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
-                    ParameterName: '/tetra/firebase/*'
+                      ParameterName: '/tetra/firebase/*'
                 - S3CrudPolicy:
-                    BucketName: !Ref ImageBucket
+                      BucketName: !Ref ImageBucket
                 - Statement:
-                    - Effect: Allow
-                      Action:
-                          - cognito-idp:AdminDeleteUser
-                      Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/ap-northeast-1_b6QnfWCPc'
+                      - Effect: Allow
+                        Action:
+                            - cognito-idp:AdminDeleteUser
+                        Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/ap-northeast-1_b6QnfWCPc'
             Architectures:
                 - x86_64
             Events:
@@ -179,11 +203,11 @@ Resources:
             MemorySize: 512
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
-                    ParameterName: '/tetra/firebase/*'
+                      ParameterName: '/tetra/firebase/*'
                 - SSMParameterWithSlashPrefixReadPolicy:
-                    ParameterName: '/tetra/google/*'
+                      ParameterName: '/tetra/google/*'
                 - S3CrudPolicy:
-                    BucketName: !Ref ImageBucket
+                      BucketName: !Ref ImageBucket
             Architectures:
                 - x86_64
             Events:
@@ -191,7 +215,6 @@ Resources:
                     Type: Api
                     Properties:
                         RestApiId: !Ref Tetra
-                        Path: /map
                         Path: /map
                         Method: GET
                         Auth:
@@ -223,11 +246,11 @@ Resources:
             MemorySize: 512
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
-                    ParameterName: '/tetra/firebase/*'
+                      ParameterName: '/tetra/firebase/*'
                 - SSMParameterWithSlashPrefixReadPolicy:
-                    ParameterName: '/tetra/google/*'
+                      ParameterName: '/tetra/google/*'
                 - S3CrudPolicy:
-                    BucketName: !Ref ImageBucket
+                      BucketName: !Ref ImageBucket
             Architectures:
                 - x86_64
             Events:
@@ -258,11 +281,11 @@ Resources:
             MemorySize: 512
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
-                    ParameterName: '/tetra/firebase/*'
+                      ParameterName: '/tetra/firebase/*'
                 - SSMParameterWithSlashPrefixReadPolicy:
-                    ParameterName: '/tetra/google/*'
+                      ParameterName: '/tetra/google/*'
                 - S3CrudPolicy:
-                    BucketName: !Ref ImageBucket
+                      BucketName: !Ref ImageBucket
             Architectures:
                 - x86_64
             Events:
@@ -450,7 +473,7 @@ Resources:
                 Sourcemap: true
                 EntryPoints:
                     - index.ts
-        
+
     # inbox
     InboxSummaryFunction:
         Type: AWS::Serverless::Function
@@ -462,9 +485,9 @@ Resources:
             MemorySize: 512
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
-                    ParameterName: '/tetra/firebase/*'
+                      ParameterName: '/tetra/firebase/*'
                 - S3CrudPolicy:
-                    BucketName: !Ref ImageBucket
+                      BucketName: !Ref ImageBucket
             Architectures:
                 - x86_64
             Events:
@@ -493,7 +516,6 @@ Resources:
                 EntryPoints:
                     - index.ts
 
-
     InboxFunction:
         Type: AWS::Serverless::Function
         Properties:
@@ -504,9 +526,9 @@ Resources:
             MemorySize: 512
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
-                    ParameterName: '/tetra/firebase/*'
+                      ParameterName: '/tetra/firebase/*'
                 - S3CrudPolicy:
-                    BucketName: !Ref ImageBucket
+                      BucketName: !Ref ImageBucket
             Architectures:
                 - x86_64
             Events:
@@ -537,9 +559,9 @@ Resources:
             MemorySize: 512
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
-                    ParameterName: '/tetra/firebase/*'
+                      ParameterName: '/tetra/firebase/*'
                 - S3CrudPolicy:
-                    BucketName: !Ref ImageBucket
+                      BucketName: !Ref ImageBucket
             Architectures:
                 - x86_64
             Events:
@@ -570,9 +592,9 @@ Resources:
             MemorySize: 512
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
-                    ParameterName: '/tetra/firebase/*'
+                      ParameterName: '/tetra/firebase/*'
                 - S3CrudPolicy:
-                    BucketName: !Ref ImageBucket
+                      BucketName: !Ref ImageBucket
             Architectures:
                 - x86_64
             Events:
@@ -611,9 +633,9 @@ Resources:
             MemorySize: 512
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
-                    ParameterName: '/tetra/firebase/*'
+                      ParameterName: '/tetra/firebase/*'
                 - S3CrudPolicy:
-                    BucketName: !Ref ImageBucket
+                      BucketName: !Ref ImageBucket
             Architectures:
                 - x86_64
             Events:
@@ -648,7 +670,7 @@ Resources:
                     CDN_DOMAIN: !If [IsStg, 'cdn-stg.example.com', !Ref AWS::NoValue]
             Policies:
                 - S3CrudPolicy:
-                    BucketName: !Ref ImageBucket
+                      BucketName: !Ref ImageBucket
             Architectures:
                 - x86_64
             Events:
@@ -668,6 +690,135 @@ Resources:
                 Sourcemap: true
                 EntryPoints:
                     - post.ts
+
+    # ============================
+    #  Admin
+    # ============================
+    AdminMessageFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/admin/inbox/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - S3CrudPolicy:
+                      BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                SendSystemMessage:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref TetraAdmin
+                        Path: /admin/inbox/messages
+                        Method: POST
+                ListSystemMessages:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref TetraAdmin
+                        Path: /admin/inbox/messages
+                        Method: GET
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
+
+    AdminMessageDetailFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/admin/inbox/{messageId}/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - S3CrudPolicy:
+                      BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                DeleteSystemMessage:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref TetraAdmin
+                        Path: /admin/inbox/messages/{messageId}
+                        Method: DELETE
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
+
+    AdminUserListFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/admin/users/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+            Architectures:
+                - x86_64
+            Events:
+                ListUsers:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref TetraAdmin
+                        Path: /admin/users
+                        Method: GET
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
+
+    AdminUserDetailFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/admin/users/detail/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+            Architectures:
+                - x86_64
+            Events:
+                GetUser:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref TetraAdmin
+                        Path: /admin/users/{userId}
+                        Method: GET
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
 
 Outputs:
     TetraApiEndpoint:

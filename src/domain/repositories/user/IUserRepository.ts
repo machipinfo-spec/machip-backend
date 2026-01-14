@@ -9,4 +9,9 @@ export interface IUserRepository {
     findByAuthId(authId: AuthId): Promise<User | null>;
     findByUserId(userId: UserId): Promise<User | null>;
     findAll(): Promise<User[]>;
+    search(params: {
+        limit?: number;
+        nextToken?: string;
+        keyword?: string;
+    }): Promise<{ users: User[]; nextToken: string | null }>;
 }

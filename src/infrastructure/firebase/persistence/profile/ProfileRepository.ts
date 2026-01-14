@@ -128,6 +128,28 @@ export class ProfileRepository implements IProfileRepository {
         return this.mapToProfile(doc);
     }
 
+    async findByUserIds(userIds: UserId[]): Promise<Profile[]> {
+        if (userIds.length === 0) return [];
+
+        const { db } = await getDbAndAuth();
+        const MAX_BATCH_SIZE = 10;
+        const profiles: Profile[] = [];
+
+        // Firestore 'in' query supports up to 10 values
+        const userIdValues = userIds.map((u) => u.getValue());
+
+        for (let i = 0; i < userIdValues.length; i += MAX_BATCH_SIZE) {
+            const batch = userIdValues.slice(i, i + MAX_BATCH_SIZE);
+            const query = db.collection(this.tableName).where('deletedAt', '==', null).where('userId', 'in', batch);
+
+            const snapshot = await query.get();
+            const batchProfiles = snapshot.docs.map((doc) => this.mapToProfile(doc.data()));
+            profiles.push(...batchProfiles);
+        }
+
+        return profiles;
+    }
+
     async softDelete(profileId: ProfileId): Promise<void> {
         const { db } = await getDbAndAuth();
 
