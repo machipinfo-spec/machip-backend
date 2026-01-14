@@ -190,6 +190,114 @@ security:
   - CognitoAuthorizer: []
 
 paths:
+  # ============================
+  #  Admin APIs
+  # ============================
+  /admin/users:
+    get:
+      summary: List Users (Admin)
+      description: Get a list of users for administration purposes.
+      # security: [] # Auth not required for localhost testing
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: nextToken
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+            description: Search by name or email
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  nextToken:
+                    type: string
+                    nullable: true
+
+  /admin/users/{userId}:
+    get:
+      summary: Get User Detail (Admin)
+      # security: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /admin/inbox/messages:
+    post:
+      summary: Send System Message (Admin)
+      description: Send a system notification to specific users or all users.
+      # security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject, content, targetUserIds]
+              properties:
+                subject:
+                  type: string
+                  example: "Important Announcement"
+                content:
+                  type: string
+                  example: "System maintenance scheduled..."
+                targetUserIds:
+                  oneOf:
+                    - type: array
+                      items:
+                        type: string
+                      description: List of User IDs
+                    - type: string
+                      enum: [all]
+                      description: Send to all users
+              example:
+                subject: "Welcome"
+                content: "Welcome to Tetra!"
+                targetUserIds: ["user-id-1", "user-id-2"]
+      responses:
+        '200':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  deliveredCount:
+                    type: integer
+                  broadcastId:
+                    type: string
+                    nullable: true
+
+  # ============================
+  #  Existing APIs
+  # ============================
   /user:
     get:
       summary: Get User Info

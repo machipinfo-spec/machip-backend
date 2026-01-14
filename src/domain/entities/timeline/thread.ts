@@ -13,9 +13,8 @@ export class Thread {
         private readonly parentThreadId: ThreadId | null,
         private readonly childThreadIds: ThreadId[],
         private readonly mapPointInfoId: PointInfoId | null,
-        private readonly imageUrl: string | null,
-    ) // startDate, endDate, address removed
-    {
+        private readonly imageUrl: string | null, // startDate, endDate, address removed
+    ) {
         Object.freeze(this);
     }
 
@@ -143,6 +142,10 @@ export class Thread {
 
     public getOwnerUserId(): UserId {
         return this.ownerUserId;
+    }
+
+    public getThreadId(): ThreadId {
+        return this.id;
     }
 
     public toPrimitives(): ThreadDTO {
