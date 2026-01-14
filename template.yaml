@@ -13,6 +13,11 @@ Parameters:
             - stg
         Default: poc
 
+    LocalAllowedOrigin:
+        Type: String
+        Default: 'http://localhost:3001'
+        Description: 'Allowed Origin for local development (POC)'
+
 Conditions:
     IsStg: !Equals [!Ref Stage, stg]
     IsPoc: !Equals [!Ref Stage, poc]
@@ -53,7 +58,26 @@ Resources:
                 AllowOrigin: !If
                     - IsStg
                     - "'*'" # TODO: 本番環境に変更する
-                    - "'http://localhost:3001'"
+                    - "'https://tetra-web-chi.vercel.app','http://localhost:3000'"
+                AllowHeaders: "'Content-Type,Authorization'"
+                AllowCredentials: true
+
+    TetraAdmin:
+        Type: AWS::Serverless::Api
+        Properties:
+            Name: !If
+                - IsStg
+                - 'tetra-admin-stg'
+                - 'tetra-admin-poc'
+            StageName: Prod
+            Auth:
+                AddDefaultAuthorizerToCorsPreflight: false
+            Cors:
+                AllowMethods: "'GET,PUT,POST,DELETE,OPTIONS'"
+                AllowOrigin: !If
+                    - IsStg
+                    - "'*'" # TODO: 本番環境に変更する
+                    - !Sub "'${LocalAllowedOrigin}'"
                 AllowHeaders: "'Content-Type,Authorization'"
                 AllowCredentials: true
 
@@ -689,11 +713,9 @@ Resources:
                 SendSystemMessage:
                     Type: Api
                     Properties:
-                        RestApiId: !Ref Tetra
+                        RestApiId: !Ref TetraAdmin
                         Path: /admin/inbox/messages
                         Method: POST
-                        Auth:
-                            Authorizer: NONE # Localhost dev
         Metadata:
             BuildMethod: esbuild
             BuildProperties:
@@ -720,11 +742,9 @@ Resources:
                 ListUsers:
                     Type: Api
                     Properties:
-                        RestApiId: !Ref Tetra
+                        RestApiId: !Ref TetraAdmin
                         Path: /admin/users
                         Method: GET
-                        Auth:
-                            Authorizer: NONE
         Metadata:
             BuildMethod: esbuild
             BuildProperties:
@@ -751,11 +771,9 @@ Resources:
                 GetUser:
                     Type: Api
                     Properties:
-                        RestApiId: !Ref Tetra
+                        RestApiId: !Ref TetraAdmin
                         Path: /admin/users/{userId}
                         Method: GET
-                        Auth:
-                            Authorizer: NONE
         Metadata:
             BuildMethod: esbuild
             BuildProperties:
