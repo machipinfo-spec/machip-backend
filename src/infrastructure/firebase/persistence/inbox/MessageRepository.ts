@@ -103,21 +103,30 @@ export class MessageRepository implements IMessageRepository {
     }
 
     async findBySenderId(senderUserId: string): Promise<MessageCollection> {
+        this.logger.debug(`findBySenderId: Start searching for senderUserId: ${senderUserId}`);
         const { db } = await getDbAndAuth();
-        const snapshot = await db
-            .collection(this.tableName)
-            .where('senderId', '==', senderUserId)
-            .orderBy('createdAt', 'desc')
-            .get();
 
-        const messages: Message[] = [];
-        snapshot.forEach((doc) => {
-            const data = doc.data() as MessageDocument;
-            const message = this.documentToMessage(data);
-            messages.push(message);
-        });
+        try {
+            const snapshot = await db
+                .collection(this.tableName)
+                .where('senderUserId', '==', senderUserId)
+                .orderBy('createdAt', 'desc')
+                .get();
 
-        return MessageCollection.create(messages);
+            this.logger.debug(`findBySenderId: Query executed. Found ${snapshot.size} documents.`);
+
+            const messages: Message[] = [];
+            snapshot.forEach((doc) => {
+                const data = doc.data() as MessageDocument;
+                const message = this.documentToMessage(data);
+                messages.push(message);
+            });
+
+            return MessageCollection.create(messages);
+        } catch (error) {
+            this.logger.error(`findBySenderId: Error fetching messages`, error);
+            throw error;
+        }
     }
 
     async findByFilter(filter: {

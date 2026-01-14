@@ -716,6 +716,43 @@ Resources:
                         RestApiId: !Ref TetraAdmin
                         Path: /admin/inbox/messages
                         Method: POST
+                ListSystemMessages:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref TetraAdmin
+                        Path: /admin/inbox/messages
+                        Method: GET
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
+
+    AdminMessageDetailFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/admin/inbox/{messageId}/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - S3CrudPolicy:
+                      BucketName: !Ref ImageBucket
+            Architectures:
+                - x86_64
+            Events:
+                DeleteSystemMessage:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref TetraAdmin
+                        Path: /admin/inbox/messages/{messageId}
+                        Method: DELETE
         Metadata:
             BuildMethod: esbuild
             BuildProperties:
