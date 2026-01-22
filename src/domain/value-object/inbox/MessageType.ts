@@ -42,4 +42,16 @@ export class MessageType extends ValueObject<MessageTypeValue> {
             throw new Error(`Invalid message type: ${type}. Must be one of: system, ai, reply`);
         }
     }
+
+    public isSystem(): boolean {
+        return this.value === 'system';
+    }
+
+    public isReply(): boolean {
+        return this.value === 'reply';
+    }
+
+    public isNewEvent(): boolean {
+        return this.value === 'newEvent';
+    }
 }

@@ -1,6 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const config = {
+/** @type {import('ts-jest').JestConfigWithTsJest} */
+module.exports = {
     preset: 'ts-jest',
     testEnvironment: 'node',
     roots: ['<rootDir>/src', '<rootDir>/tests'],
@@ -10,10 +9,8 @@ const config = {
             'ts-jest',
             {
                 tsconfig: 'tsconfig.test.json',
-                // ソースマップを有効化
                 sourceMap: true,
                 inlineSourceMap: false,
-                // 分離されたモジュールでより正確な行数マッピング
                 isolatedModules: true,
             },
         ],
@@ -24,22 +21,8 @@ const config = {
     moduleFileExtensions: ['ts', 'js', 'json'],
     verbose: true,
     setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
-    // 追加設定
-    // エラー報告の改善
     errorOnDeprecated: true,
-    // より詳細なエラー情報
-    maxWorkers: 1, // デバッグ時は1つのワーカーで実行
-    // モック関連
+    maxWorkers: 1,
     clearMocks: true,
     restoreMocks: true,
-    // グローバル設定
-    globals: {
-        'ts-jest': {
-            tsconfig: 'tsconfig.test.json',
-            isolatedModules: true,
-            useESM: false,
-        },
-    },
 };
-exports.default = config;
-//# sourceMappingURL=jest.config.js.map

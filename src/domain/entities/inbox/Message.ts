@@ -174,7 +174,11 @@ export class Message implements DTOMapper<Message, MessageDTO> {
     }
 
     // システムメッセージ作成のファクトリメソッド
-    public static createSystemMessage(subject: string, content: string, senderUserId = 'システム管理者'): Message {
+    public static createSystemMessage(
+        subject: string,
+        content: string,
+        senderUserId = UserId.SYSTEM_ID.getValue(),
+    ): Message {
         return Message.create(
             MessageType.system(),
             MessageSubject.create(subject),

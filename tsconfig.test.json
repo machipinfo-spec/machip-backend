@@ -12,7 +12,9 @@
         "inlineSources": false,
         // デバッグ用
         "removeComments": false,
-        "preserveConstEnums": true
+        "preserveConstEnums": true,
+        "rootDir": ".",
+        "isolatedModules": true
     },
     "include": ["src/**/*", "tests/**/*"],
     "exclude": ["node_modules"]

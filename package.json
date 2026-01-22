@@ -21,9 +21,12 @@
     "devDependencies": {
         "@types/aws-lambda": "^8.10.159",
         "@types/firebase": "^2.4.32",
+        "@types/jest": "^30.0.0",
         "@types/node": "^24.10.1",
+        "@types/uuid": "^10.0.0",
         "aws-sdk-client-mock": "^2.0.0",
         "jest": "^29.2.1",
+        "ts-jest": "^29.4.6",
         "typescript": "^5.9.3"
     },
     "scripts": {
@@ -34,17 +37,5 @@
         "build": "sam build",
         "deploy-poc": "sam deploy --stack-name tetra-poc --parameter-overrides Stage=poc",
         "deploy-stg": "sam deploy --stack-name tetra-stg --parameter-overrides Stage=stg"
-    },
-    "jest": {
-        "testMatch": [
-            "**/__tests__/**/*.[jt]s?(x)",
-            "**/?(*.)+(spec|test).[jt]s?(x)",
-            "**/__tests__/**/*.mjs?(x)",
-            "**/?(*.)+(spec|test).mjs?(x)"
-        ],
-        "moduleFileExtensions": [
-            "mjs",
-            "js"
-        ]
     }
 }
