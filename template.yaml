@@ -33,8 +33,8 @@ Globals:
                     - IsStg
                     - 'true'
                     - 'false'
-                COGNITO_USER_POOL_ID: 'ap-northeast-1_b6QnfWCPc'
-                COGNITO_CLIENT_ID: '6ls2uqvl8u1g1eo89dgibbr0a1'
+                COGNITO_USER_POOL_ID: !Ref TetraUserPool
+                COGNITO_CLIENT_ID: !Ref TetraUserPoolClient
                 BLOB_BASE_URL: 'https://tetra-images-poc.s3.ap-northeast-1.amazonaws.com'
 Resources:
     Tetra:
@@ -48,7 +48,7 @@ Resources:
             Auth:
                 Authorizers:
                     CognitoAuthorizer:
-                        UserPoolArn: !Sub 'arn:aws:cognito-idp:ap-northeast-1:338880795815:userpool/ap-northeast-1_b6QnfWCPc'
+                        UserPoolArn: !GetAtt TetraUserPool.Arn
                         Identity:
                             Header: Authorization
                 DefaultAuthorizer: CognitoAuthorizer
@@ -77,9 +77,74 @@ Resources:
                 AllowOrigin: !If
                     - IsStg
                     - "'*'" # TODO: 本番環境に変更する
-                    - !Sub "'${LocalAllowedOrigin}'"
+                    - "'https://tetra-backoffice.vercel.app','http://localhost:3000','http://localhost:3001'"
                 AllowHeaders: "'Content-Type,Authorization'"
                 AllowCredentials: true
+
+    # ============================
+    #  Cognito
+    # ============================
+    TetraUserPool:
+        Type: AWS::Cognito::UserPool
+        Properties:
+            UserPoolName: !Sub 'tetra-user-pool-${Stage}'
+            UsernameAttributes:
+                - email
+            UsernameConfiguration:
+                CaseSensitive: false
+            AutoVerifiedAttributes:
+                - email
+            Policies:
+                PasswordPolicy:
+                    MinimumLength: 8
+                    RequireLowercase: true
+                    RequireNumbers: true
+                    RequireSymbols: false
+                    RequireUppercase: true
+            Schema:
+                - Name: email
+                  Required: true
+                  Mutable: true
+                - Name: profile
+                  AttributeDataType: String
+                  Mutable: true
+                  Required: false
+
+    TetraUserPoolClient:
+        Type: AWS::Cognito::UserPoolClient
+        Properties:
+            ClientName: !Sub 'tetra-app-client-${Stage}'
+            UserPoolId: !Ref TetraUserPool
+            GenerateSecret: true
+            ExplicitAuthFlows:
+                - ALLOW_USER_SRP_AUTH
+                - ALLOW_REFRESH_TOKEN_AUTH
+                - ALLOW_ADMIN_USER_PASSWORD_AUTH
+            AllowedOAuthFlows:
+                - code
+            AllowedOAuthScopes:
+                - email
+                - openid
+                - profile
+            AllowedOAuthFlowsUserPoolClient: true
+            CallbackURLs: !If
+                - IsPoc
+                - - http://localhost:3000/api/auth/callback/cognito
+                  - https://tetra-web-chi.vercel.app/api/auth/callback/cognito
+                - - https://tetra-web-chi.vercel.app/api/auth/callback/cognito
+            LogoutURLs: !If
+                - IsPoc
+                - - http://localhost:3000
+                  - https://tetra-web-chi.vercel.app
+                - - https://tetra-web-chi.vercel.app
+            SupportedIdentityProviders:
+                - COGNITO
+
+    TetraUserPoolDomain:
+        Type: AWS::Cognito::UserPoolDomain
+        Properties:
+            Domain: !Sub 'tetra-${Stage}-${AWS::AccountId}'
+            UserPoolId: !Ref TetraUserPool
 
     # 画像保管用S3バケット
     ImageBucket:
@@ -90,10 +155,13 @@ Resources:
                 - 'tetra-images-stg'
                 - 'tetra-images-poc'
             PublicAccessBlockConfiguration:
-                BlockPublicAcls: true
-                BlockPublicPolicy: true
-                IgnorePublicAcls: true
-                RestrictPublicBuckets: true
+                BlockPublicAcls: false
+                BlockPublicPolicy: false
+                IgnorePublicAcls: false
+                RestrictPublicBuckets: false
+            WebsiteConfiguration:
+                IndexDocument: index.html
+                ErrorDocument: error.html
             CorsConfiguration:
                 CorsRules:
                     - AllowedOrigins: !Split
@@ -125,12 +193,16 @@ Resources:
             Bucket: !Ref ImageBucket
             PolicyDocument:
                 Statement:
+                    - Sid: PublicReadGetObject
+                      Effect: Allow
+                      Principal: '*'
+                      Action: s3:GetObject
+                      Resource: !Sub '${ImageBucket.Arn}/*'
                     - Sid: AllowLambdaAccess
                       Effect: Allow
                       Principal:
                           Service: lambda.amazonaws.com
                       Action:
-                          - s3:GetObject
                           - s3:PutObject
                           - s3:DeleteObject
                       Resource: !Sub '${ImageBucket.Arn}/*'
@@ -156,7 +228,7 @@ Resources:
                       - Effect: Allow
                         Action:
                             - cognito-idp:AdminDeleteUser
-                        Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/ap-northeast-1_b6QnfWCPc'
+                        Resource: !GetAtt TetraUserPool.Arn
             Architectures:
                 - x86_64
             Events:
@@ -716,12 +788,14 @@ Resources:
                         RestApiId: !Ref TetraAdmin
                         Path: /admin/inbox/messages
                         Method: POST
+
                 ListSystemMessages:
                     Type: Api
                     Properties:
                         RestApiId: !Ref TetraAdmin
                         Path: /admin/inbox/messages
                         Method: GET
+
         Metadata:
             BuildMethod: esbuild
             BuildProperties:
@@ -753,6 +827,7 @@ Resources:
                         RestApiId: !Ref TetraAdmin
                         Path: /admin/inbox/messages/{messageId}
                         Method: DELETE
+
         Metadata:
             BuildMethod: esbuild
             BuildProperties:
@@ -782,6 +857,7 @@ Resources:
                         RestApiId: !Ref TetraAdmin
                         Path: /admin/users
                         Method: GET
+
         Metadata:
             BuildMethod: esbuild
             BuildProperties:
@@ -811,6 +887,7 @@ Resources:
                         RestApiId: !Ref TetraAdmin
                         Path: /admin/users/{userId}
                         Method: GET
+
         Metadata:
             BuildMethod: esbuild
             BuildProperties:
