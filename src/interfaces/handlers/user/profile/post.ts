@@ -105,13 +105,24 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         url = requestBody.url;
         imageUrl = requestBody.imageUrl;
 
-        if (!userName || !imageUrl || !introduction) {
+        if (!userName || !imageUrl) {
             return {
                 statusCode: 400,
                 headers: corsHeaders,
                 body: JSON.stringify({
                     message: 'Missing required fields',
-                    required: ['userName', 'imageUrl', 'introduction'],
+                    required: ['userName', 'imageUrl'],
+                }),
+            };
+        }
+
+        if (introduction === undefined || introduction === null) {
+            return {
+                statusCode: 400,
+                headers: corsHeaders,
+                body: JSON.stringify({
+                    message: 'Missing required fields',
+                    required: ['introduction'], // It must be present, even if empty string
                 }),
             };
         }

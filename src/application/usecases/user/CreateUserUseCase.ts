@@ -5,17 +5,11 @@ import { AuthId } from '../../../domain/value-object/users/AuthId';
 import { User } from '../../../domain/entities/user/user';
 
 export class CreateUserUseCase {
-    constructor(
-        private userRepository: IUserRepository,
-    ) {}
+    constructor(private userRepository: IUserRepository) {}
 
-    async execute(
-        authId: string,
-        name: string,
-        email: string,
-    ): Promise<User> {
+    async execute(authId: string, name: string, email: string): Promise<User> {
         if (await this.userRepository.findByAuthId(new AuthId(authId))) {
-            throw new Error('User already exists');
+            throw new Error(`User already exists ${authId}`);
         }
 
         const user = User.create(new AuthId(authId), new UserName(name), new Email(email));

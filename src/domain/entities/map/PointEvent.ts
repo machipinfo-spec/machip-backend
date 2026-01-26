@@ -6,22 +6,22 @@ export class PointEvent {
     private constructor(
         private readonly id: PointEventId,
         private readonly pointInfoId: PointInfoId,
-        private readonly threadName: ThreadName, // New
-        private readonly imageUrl: string | null, // New
-        private readonly createdAt: Date, // New
+        private readonly threadName: ThreadName,
+        private readonly imageUrl: string | null,
+        private readonly createdAt: Date,
         private readonly startDate: Date,
         private readonly endDate: Date,
         private readonly detail: string | null,
         private readonly url: string | null,
-        private readonly deletedAt: Date | null, // New
+        private readonly deletedAt: Date | null,
     ) {
         Object.freeze(this);
     }
 
     public static create(
         pointInfoId: PointInfoId,
-        threadName: ThreadName, // New
-        imageUrl: string | null, // New
+        threadName: ThreadName,
+        imageUrl: string | null,
         startDate: Date,
         endDate: Date,
         detail: string | null,
@@ -33,26 +33,26 @@ export class PointEvent {
             pointInfoId,
             threadName,
             imageUrl,
-            new Date(), // createdAt
+            new Date(),
             startDate,
             endDate,
             detail,
             url,
-            null, // deletedAt
+            null,
         );
     }
 
     public static fromExisting(
         id: PointEventId,
         pointInfoId: PointInfoId,
-        threadName: ThreadName, // New
-        imageUrl: string | null, // New
-        createdAt: Date, // New
+        threadName: ThreadName,
+        imageUrl: string | null,
+        createdAt: Date,
         startDate: Date,
         endDate: Date,
         detail: string | null,
         url: string | null,
-        deletedAt: Date | null, // New
+        deletedAt: Date | null,
     ): PointEvent {
         return new PointEvent(
             id,
