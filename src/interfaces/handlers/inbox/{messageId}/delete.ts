@@ -1,8 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DeleteUserMessageUseCase } from '../../../../application/usecases/inbox/DeleteUserMessageUseCase';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
-import { InboxRepositoryModule } from '../../../../infrastructure/firebase/persistence/inbox/InboxRepositoryModule';
-import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
+import { DynamoUserMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoUserMessageRepository';
+import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 import { Logger } from '../../../../shared/logger';
 import { HandlerUtil } from '../../util';
 
@@ -12,7 +12,7 @@ const corsHeaders = {
     'Access-Control-Allow-Methods': 'GET,DELETE,OPTIONS',
 };
 const handlerUtil = new HandlerUtil();
-const userRepository = new UserRepository();
+const userRepository = new DynamoUserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 
 /**
@@ -67,7 +67,7 @@ async function handleDeleteUserMessage(
 ): Promise<APIGatewayProxyResult> {
     try {
         // リポジトリの初期化
-        const userMessageRepository = InboxRepositoryModule.getUserMessageRepository();
+        const userMessageRepository = new DynamoUserMessageRepository();
 
         // ユースケース実行
         const deleteUserMessageUseCase = new DeleteUserMessageUseCase(userMessageRepository, logger);

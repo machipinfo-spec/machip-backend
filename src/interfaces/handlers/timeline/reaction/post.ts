@@ -1,14 +1,14 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { HandlerUtil } from '../../util';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
-import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
+import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 import { ReactionCreateUseCase } from '../../../../application/usecases/timeline/ReactionCreateUseCase';
-import { ReactionRepository } from '../../../../infrastructure/firebase/persistence/timeline/ReactionRepository';
+import { DynamoReactionRepository } from '../../../../infrastructure/aws/dynamo/timeline/DynamoReactionRepository';
 import { ReactionType } from '../../../../domain/value-object/timeline/reactionType';
 
-const reactionRepository = new ReactionRepository();
+const reactionRepository = new DynamoReactionRepository();
 const useCase = new ReactionCreateUseCase(reactionRepository);
-const userRepository = new UserRepository();
+const userRepository = new DynamoUserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
 

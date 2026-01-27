@@ -1,13 +1,13 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DeleteUserUseCase } from '../../../application/usecases/user/DeleteUserUseCase';
-import { UserRepository } from '../../../infrastructure/firebase/persistence/user/UserRepository';
+import { DynamoUserRepository } from '../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 import { IDRepository } from '../../../infrastructure/cognito/presistence/IDRepository';
 import { HandlerUtil } from '../util';
-import { ProfileRepository } from '../../../infrastructure/firebase/persistence/profile/ProfileRepository';
+import { DynamoProfileRepository } from '../../../infrastructure/aws/dynamo/profile/DynamoProfileRepository';
 
-const userRepository = new UserRepository();
+const userRepository = new DynamoUserRepository();
 const idRepository = new IDRepository();
-const profileRepository = new ProfileRepository();
+const profileRepository = new DynamoProfileRepository();
 const deleteUserUseCase = new DeleteUserUseCase(userRepository, profileRepository, idRepository);
 const handlerUtil = new HandlerUtil();
 

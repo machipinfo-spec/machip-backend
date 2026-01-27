@@ -1,22 +1,22 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { ThreadRepository } from '../../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
+import { DynamoThreadRepository } from '../../../../infrastructure/aws/dynamo/timeline/DynamoThreadRepository';
 import { ThreadCreateUseCase } from '../../../../application/usecases/timeline/ThreadCreateUseCase';
 import { HandlerUtil } from '../../util';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
-import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
-import { ProfileRepository } from '../../../../infrastructure/firebase/persistence/profile/ProfileRepository';
+import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
+import { DynamoProfileRepository } from '../../../../infrastructure/aws/dynamo/profile/DynamoProfileRepository';
 import { MessageSendingService } from '../../../../application/services/inbox/MessageSendingService';
-import { MessageBroadcastRepository } from '../../../../infrastructure/firebase/persistence/inbox/MessageBroadcastRepository';
-import { MessageRepository } from '../../../../infrastructure/firebase/persistence/inbox/MessageRepository';
-import { UserMessageRepository } from '../../../../infrastructure/firebase/persistence/inbox/UserMessageRepository';
+import { DynamoMessageBroadcastRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoMessageBroadcastRepository';
+import { DynamoMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoMessageRepository';
+import { DynamoUserMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoUserMessageRepository';
 import { Logger } from '../../../../shared/logger';
 
-const profileRepository = new ProfileRepository();
-const threadRepository = new ThreadRepository();
-const messageRepository = new MessageRepository();
-const userMessageRepository = new UserMessageRepository();
-const messageBroadcastRepository = new MessageBroadcastRepository();
-const userRepository = new UserRepository();
+const profileRepository = new DynamoProfileRepository();
+const threadRepository = new DynamoThreadRepository();
+const messageRepository = new DynamoMessageRepository();
+const userMessageRepository = new DynamoUserMessageRepository();
+const messageBroadcastRepository = new DynamoMessageBroadcastRepository();
+const userRepository = new DynamoUserRepository();
 const messageSendingService = new MessageSendingService(
     profileRepository,
     messageRepository,

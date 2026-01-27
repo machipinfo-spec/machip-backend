@@ -1,8 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { GetUserMessagesUseCase } from '../../../application/usecases/inbox/GetUserMessagesUseCase';
 import { GetUserUseCase } from '../../../application/usecases/user/GetUserUseCase';
-import { InboxRepositoryModule } from '../../../infrastructure/firebase/persistence/inbox/InboxRepositoryModule';
-import { UserRepository } from '../../../infrastructure/firebase/persistence/user/UserRepository';
+import { DynamoMessageRepository } from '../../../infrastructure/aws/dynamo/inbox/DynamoMessageRepository';
+import { DynamoUserMessageRepository } from '../../../infrastructure/aws/dynamo/inbox/DynamoUserMessageRepository';
+import { DynamoProfileRepository } from '../../../infrastructure/aws/dynamo/profile/DynamoProfileRepository';
+import { DynamoUserRepository } from '../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 import { Logger } from '../../../shared/logger';
 import { HandlerUtil } from '../util';
 const corsHeaders = {
@@ -11,7 +13,7 @@ const corsHeaders = {
     'Access-Control-Allow-Methods': 'GET,OPTIONS',
 };
 const handlerUtil = new HandlerUtil();
-const userRepository = new UserRepository();
+const userRepository = new DynamoUserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -54,9 +56,9 @@ async function handleGetUserMessages(
         const queryParams = event.queryStringParameters || {};
 
         // リポジトリの初期化
-        const messageRepository = InboxRepositoryModule.getMessageRepository();
-        const userMessageRepository = InboxRepositoryModule.getUserMessageRepository();
-        const profileRepository = InboxRepositoryModule.getProfileRepository();
+        const messageRepository = new DynamoMessageRepository();
+        const userMessageRepository = new DynamoUserMessageRepository();
+        const profileRepository = new DynamoProfileRepository();
 
         // ユースケース実行
         const getUserMessagesUseCase = new GetUserMessagesUseCase(

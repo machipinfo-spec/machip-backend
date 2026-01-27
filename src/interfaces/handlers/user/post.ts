@@ -1,9 +1,9 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { CreateUserUseCase } from '../../../application/usecases/user/CreateUserUseCase';
-import { UserRepository } from '../../../infrastructure/firebase/persistence/user/UserRepository';
+import { DynamoUserRepository } from '../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 import { HandlerUtil } from '../util';
 
-const userRepository = new UserRepository();
+const userRepository = new DynamoUserRepository();
 const createUserUseCase = new CreateUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
 

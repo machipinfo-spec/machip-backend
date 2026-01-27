@@ -4,11 +4,11 @@ import {
     MessageSendingRequest,
 } from '../../../../application/services/inbox/MessageSendingService';
 import { SendSystemMessageUseCase } from '../../../../application/usecases/admin/SendSystemMessageUseCase';
-import { MessageRepository } from '../../../../infrastructure/firebase/persistence/inbox/MessageRepository';
-import { UserMessageRepository } from '../../../../infrastructure/firebase/persistence/inbox/UserMessageRepository';
-import { MessageBroadcastRepository } from '../../../../infrastructure/firebase/persistence/inbox/MessageBroadcastRepository';
-import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
-import { ProfileRepository } from '../../../../infrastructure/firebase/persistence/profile/ProfileRepository';
+import { DynamoMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoMessageRepository';
+import { DynamoUserMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoUserMessageRepository';
+import { DynamoMessageBroadcastRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoMessageBroadcastRepository';
+import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
+import { DynamoProfileRepository } from '../../../../infrastructure/aws/dynamo/profile/DynamoProfileRepository';
 // Logger mock or simple console implementation since shared/logger is not fully visible, assuming console.
 class ConsoleLogger {
     info(message: string, meta?: any) {
@@ -25,11 +25,11 @@ class ConsoleLogger {
     }
 }
 
-const messageRepository = new MessageRepository();
-const userMessageRepository = new UserMessageRepository();
-const messageBroadcastRepository = new MessageBroadcastRepository();
-const userRepository = new UserRepository();
-const profileRepository = new ProfileRepository();
+const messageRepository = new DynamoMessageRepository();
+const userMessageRepository = new DynamoUserMessageRepository();
+const messageBroadcastRepository = new DynamoMessageBroadcastRepository();
+const userRepository = new DynamoUserRepository();
+const profileRepository = new DynamoProfileRepository();
 const logger = new ConsoleLogger();
 
 const service = new MessageSendingService(

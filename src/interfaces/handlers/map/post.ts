@@ -1,30 +1,30 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { MapRepository } from '../../../infrastructure/firebase/persistence/map/MapRepository';
+import { DynamoMapRepository } from '../../../infrastructure/aws/dynamo/map/DynamoMapRepository';
 import { CreatePointInfoUseCase } from '../../../application/usecases/map/CreatePointInfoUseCase';
-import { ThreadRepository } from '../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
+import { DynamoThreadRepository } from '../../../infrastructure/aws/dynamo/timeline/DynamoThreadRepository';
 import { ThreadCreateUseCase } from '../../../application/usecases/timeline/ThreadCreateUseCase';
 import { GetUserUseCase } from '../../../application/usecases/user/GetUserUseCase';
-import { UserRepository } from '../../../infrastructure/firebase/persistence/user/UserRepository';
+import { DynamoUserRepository } from '../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 import { HandlerUtil } from '../util';
 import { ReverseGeocodingRepository } from '../../../infrastructure/gcp/persistence/ReverseGeocodingRepository';
-import { ProfileRepository } from '../../../infrastructure/firebase/persistence/profile/ProfileRepository';
+import { DynamoProfileRepository } from '../../../infrastructure/aws/dynamo/profile/DynamoProfileRepository';
 import { MessageSendingService } from '../../../application/services/inbox/MessageSendingService';
-import { MessageBroadcastRepository } from '../../../infrastructure/firebase/persistence/inbox/MessageBroadcastRepository';
-import { MessageRepository } from '../../../infrastructure/firebase/persistence/inbox/MessageRepository';
-import { UserMessageRepository } from '../../../infrastructure/firebase/persistence/inbox/UserMessageRepository';
+import { DynamoMessageBroadcastRepository } from '../../../infrastructure/aws/dynamo/inbox/DynamoMessageBroadcastRepository';
+import { DynamoMessageRepository } from '../../../infrastructure/aws/dynamo/inbox/DynamoMessageRepository';
+import { DynamoUserMessageRepository } from '../../../infrastructure/aws/dynamo/inbox/DynamoUserMessageRepository';
 import { Logger } from '../../../shared/logger';
 
-import { PointEventRepository } from '../../../infrastructure/firebase/persistence/map/PointEventRepository';
+import { DynamoPointEventRepository } from '../../../infrastructure/aws/dynamo/map/DynamoPointEventRepository';
 
 const reverseGeocodingRepository = new ReverseGeocodingRepository();
-const mapRepository = new MapRepository();
-const pointEventRepository = new PointEventRepository();
-const threadRepository = new ThreadRepository();
-const profileRepository = new ProfileRepository();
-const messageRepository = new MessageRepository();
-const userMessageRepository = new UserMessageRepository();
-const messageBroadcastRepository = new MessageBroadcastRepository();
-const userRepository = new UserRepository();
+const mapRepository = new DynamoMapRepository();
+const pointEventRepository = new DynamoPointEventRepository();
+const threadRepository = new DynamoThreadRepository();
+const profileRepository = new DynamoProfileRepository();
+const messageRepository = new DynamoMessageRepository();
+const userMessageRepository = new DynamoUserMessageRepository();
+const messageBroadcastRepository = new DynamoMessageBroadcastRepository();
+const userRepository = new DynamoUserRepository();
 const messageSendingService = new MessageSendingService(
     profileRepository,
     messageRepository,

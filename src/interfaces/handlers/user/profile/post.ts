@@ -1,15 +1,15 @@
 // handlers/profile/post.ts
 
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { ProfileRepository } from '../../../../infrastructure/firebase/persistence/profile/ProfileRepository';
+import { DynamoProfileRepository } from '../../../../infrastructure/aws/dynamo/profile/DynamoProfileRepository';
 import { HandlerUtil } from '../../util';
 import { CreateProfileUseCase } from '../../../../application/usecases/profile/CreateProfileUseCase';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
-import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
+import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 
-const userRepository = new UserRepository();
+const userRepository = new DynamoUserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
-const profileRepository = new ProfileRepository();
+const profileRepository = new DynamoProfileRepository();
 const createProfileUseCase = new CreateProfileUseCase(profileRepository);
 const handlerUtil = new HandlerUtil();
 

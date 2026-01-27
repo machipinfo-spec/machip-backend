@@ -1,8 +1,8 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { RegisterDeviceTokenUseCase } from '../../../../application/usecases/user/RegisterDeviceTokenUseCase';
-import { DeviceTokenRepository } from '../../../../infrastructure/firebase/persistence/user/DeviceTokenRepository';
+import { DynamoDeviceTokenRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoDeviceTokenRepository';
 import { HandlerUtil } from '../../util';
-import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
+import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
 
 interface RegisterDeviceTokenRequest {
@@ -85,10 +85,10 @@ export class RegisterDeviceTokenHandler {
 }
 
 // Instantiate dependencies
-const deviceTokenRepository = new DeviceTokenRepository();
+const deviceTokenRepository = new DynamoDeviceTokenRepository();
 const registerDeviceTokenUseCase = new RegisterDeviceTokenUseCase(deviceTokenRepository);
 const handlerUtil = new HandlerUtil();
-const userRepository = new UserRepository();
+const userRepository = new DynamoUserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 
 const handlerInstance = new RegisterDeviceTokenHandler(handlerUtil, getUserUseCase, registerDeviceTokenUseCase);

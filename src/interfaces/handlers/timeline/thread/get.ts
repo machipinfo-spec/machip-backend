@@ -1,18 +1,18 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { ThreadRepository } from '../../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
+import { DynamoThreadRepository } from '../../../../infrastructure/aws/dynamo/timeline/DynamoThreadRepository';
 import { ThreadReadUseCase } from '../../../../application/usecases/timeline/ThreadReadUseCase';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
-import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
+import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 import { HandlerUtil } from '../../util';
-import { ProfileRepository } from '../../../../infrastructure/firebase/persistence/profile/ProfileRepository';
+import { DynamoProfileRepository } from '../../../../infrastructure/aws/dynamo/profile/DynamoProfileRepository';
 
-import { PointEventRepository } from '../../../../infrastructure/firebase/persistence/map/PointEventRepository';
+import { DynamoPointEventRepository } from '../../../../infrastructure/aws/dynamo/map/DynamoPointEventRepository';
 
-const userRepository = new UserRepository();
+const userRepository = new DynamoUserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
-const threadRepository = new ThreadRepository();
-const profileRepository = new ProfileRepository();
-const pointEventRepository = new PointEventRepository();
+const threadRepository = new DynamoThreadRepository();
+const profileRepository = new DynamoProfileRepository();
+const pointEventRepository = new DynamoPointEventRepository();
 const threadReadUseCase = new ThreadReadUseCase(threadRepository, profileRepository, pointEventRepository);
 const handlerUtil = new HandlerUtil();
 

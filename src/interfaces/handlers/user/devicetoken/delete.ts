@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DeleteDeviceTokenUseCase } from '../../../../application/usecases/user/DeleteDeviceTokenUseCase';
-import { DeviceTokenRepository } from '../../../../infrastructure/firebase/persistence/user/DeviceTokenRepository';
+import { DynamoDeviceTokenRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoDeviceTokenRepository';
 import { HandlerUtil } from '../../util';
 
 const corsHeaders = {
@@ -11,7 +11,10 @@ const corsHeaders = {
 };
 
 export class DeleteDeviceTokenHandler {
-    constructor(private handlerUtil: HandlerUtil, private deleteDeviceTokenUseCase: DeleteDeviceTokenUseCase) {}
+    constructor(
+        private handlerUtil: HandlerUtil,
+        private deleteDeviceTokenUseCase: DeleteDeviceTokenUseCase,
+    ) {}
 
     public async handle(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
         try {
@@ -62,7 +65,7 @@ export class DeleteDeviceTokenHandler {
 }
 
 // Instantiate dependencies
-const deviceTokenRepository = new DeviceTokenRepository();
+const deviceTokenRepository = new DynamoDeviceTokenRepository();
 const deleteDeviceTokenUseCase = new DeleteDeviceTokenUseCase(deviceTokenRepository);
 const handlerUtil = new HandlerUtil();
 

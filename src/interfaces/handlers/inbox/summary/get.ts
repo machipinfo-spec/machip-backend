@@ -2,8 +2,9 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { GetUserInboxSummaryUseCase } from '../../../../application/usecases/inbox/GetUserInboxSummaryUseCase';
 import { MarkAllAsReadUseCase } from '../../../../application/usecases/inbox/MarkAllAsReadUseCase';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
-import { InboxRepositoryModule } from '../../../../infrastructure/firebase/persistence/inbox/InboxRepositoryModule';
-import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
+import { DynamoMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoMessageRepository';
+import { DynamoUserMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoUserMessageRepository';
+import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 import { Logger } from '../../../../shared/logger';
 import { HandlerUtil } from '../../util';
 
@@ -13,7 +14,7 @@ const corsHeaders = {
     'Access-Control-Allow-Methods': 'GET,PUT,OPTIONS',
 };
 const handlerUtil = new HandlerUtil();
-const userRepository = new UserRepository();
+const userRepository = new DynamoUserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -50,8 +51,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 async function handleGetInboxSummary(userId: string, logger: Logger): Promise<APIGatewayProxyResult> {
     try {
         // リポジトリの初期化
-        const messageRepository = InboxRepositoryModule.getMessageRepository();
-        const userMessageRepository = InboxRepositoryModule.getUserMessageRepository();
+        const messageRepository = new DynamoMessageRepository();
+        const userMessageRepository = new DynamoUserMessageRepository();
 
         // ユースケース実行
         const getUserInboxSummaryUseCase = new GetUserInboxSummaryUseCase(
@@ -90,7 +91,7 @@ async function handleMarkAllAsRead(
         const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
 
         // リポジトリの初期化
-        const userMessageRepository = InboxRepositoryModule.getUserMessageRepository();
+        const userMessageRepository = new DynamoUserMessageRepository();
 
         // ユースケース実行
         const markAllAsReadUseCase = new MarkAllAsReadUseCase(userMessageRepository, logger);
