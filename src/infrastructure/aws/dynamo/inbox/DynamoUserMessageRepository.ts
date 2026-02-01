@@ -156,6 +156,7 @@ export class DynamoUserMessageRepository implements IUserMessageRepository {
             params.IndexName = 'UserIdIndex';
             params.KeyConditionExpression = 'userId = :uid';
             attrVals[':uid'] = filter.userId;
+            params.ScanIndexForward = false; // Descending
         }
 
         if (filter.messageId) {
@@ -178,18 +179,29 @@ export class DynamoUserMessageRepository implements IUserMessageRepository {
 
         if (filters.length > 0) {
             params.FilterExpression = filters.join(' AND ');
+        }
+
+        if (Object.keys(attrVals).length > 0) {
             params.ExpressionAttributeValues = attrVals;
         }
 
         if (filter.limit) params.Limit = filter.limit;
 
+        console.log('[DynamoUserMessageRepository] findByFilter params:', JSON.stringify(params));
+
         let result;
-        if (params.KeyConditionExpression) {
-            result = await this.client.send(new QueryCommand(params));
-        } else {
-            // Scan if no user ID provided? (Dangerous)
-            // But if userId is optional in filter, and missing, we must Scan.
-            result = await this.client.send(new ScanCommand(params));
+        try {
+            if (params.KeyConditionExpression) {
+                result = await this.client.send(new QueryCommand(params));
+            } else {
+                // Scan if no user ID provided? (Dangerous)
+                // But if userId is optional in filter, and missing, we must Scan.
+                result = await this.client.send(new ScanCommand(params));
+            }
+        } catch (error) {
+            console.error('[DynamoUserMessageRepository] findByFilter Error:', error);
+            console.error('Params causing error:', JSON.stringify(params, null, 2));
+            throw error;
         }
 
         const msgs = result.Items ? result.Items.map((i) => this.mapToEntity(i)) : [];

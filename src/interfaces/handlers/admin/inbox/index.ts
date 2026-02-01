@@ -11,6 +11,8 @@ export const lambdaHandler: APIGatewayProxyHandler = async (
         return postHandler(event, context, callback) as Promise<APIGatewayProxyResult>;
     } else if (event.httpMethod === 'GET') {
         return listHandler(event, context, callback) as Promise<APIGatewayProxyResult>;
+    } else if (event.httpMethod === 'OPTIONS') {
+        return listHandler(event, context, callback) as Promise<APIGatewayProxyResult>;
     }
 
     return {

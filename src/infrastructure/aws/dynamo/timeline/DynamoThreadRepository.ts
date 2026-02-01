@@ -25,18 +25,19 @@ export class DynamoThreadRepository implements IThreadRepository {
 
     async save(thread: Thread): Promise<void> {
         const dto = thread.toPrimitives();
-        const item = {
+        const item: any = {
             id: dto.id,
             threadName: dto.threadName,
             createdAt: dto.createdAt.toISOString(),
-            deleatedAt: dto.deleatedAt ? dto.deleatedAt.toISOString() : null, // Typo in Domain 'deleatedAt'
             ownerUserId: dto.ownerUserId,
-            parentThreadId: dto.parentThreadId,
-            childThreadIds: dto.childThreadIds, // List
-            mapPointInfoId: dto.mapPointInfoId,
-            imageUrl: dto.imageUrl,
+            childThreadIds: dto.childThreadIds,
             updatedAt: new Date().toISOString(),
         };
+
+        if (dto.deleatedAt) item.deleatedAt = dto.deleatedAt.toISOString();
+        if (dto.parentThreadId) item.parentThreadId = dto.parentThreadId;
+        if (dto.mapPointInfoId) item.mapPointInfoId = dto.mapPointInfoId;
+        if (dto.imageUrl) item.imageUrl = dto.imageUrl;
 
         await this.client.send(
             new PutCommand({
@@ -120,7 +121,6 @@ export class DynamoThreadRepository implements IThreadRepository {
                 ExpressionAttributeValues: {
                     ':null': null,
                 },
-                Limit: limit,
             }),
         );
 
@@ -128,7 +128,16 @@ export class DynamoThreadRepository implements IThreadRepository {
             return [];
         }
 
-        return result.Items.map((item) => this.mapToEntity(item));
+        const threads = result.Items.map((item) => this.mapToEntity(item));
+
+        // Sort by createdAt DESC
+        threads.sort((a, b) => b.toPrimitives().createdAt.getTime() - a.toPrimitives().createdAt.getTime());
+
+        if (limit) {
+            return threads.slice(0, limit);
+        }
+
+        return threads;
     }
 
     async delete(threadId: string): Promise<void> {

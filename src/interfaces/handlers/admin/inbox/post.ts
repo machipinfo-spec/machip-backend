@@ -46,8 +46,8 @@ export const handler: APIGatewayProxyHandler = async (event): Promise<APIGateway
 
     // Dynamic CORS handling
     const origin = event.headers?.origin || event.headers?.Origin || '';
-    const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001', 'https://tetra-web-chi.vercel.app'];
-    const allowOrigin = allowedOrigins.includes(origin) ? origin : '*';
+    const allowedOrigins = ['https://tetra-backoffice.vercel.app', 'http://localhost:3000', 'http://localhost:3001'];
+    const allowOrigin = allowedOrigins.includes(origin) ? origin : '';
 
     const corsHeaders = {
         'Access-Control-Allow-Origin': allowOrigin,

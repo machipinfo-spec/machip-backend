@@ -81,12 +81,10 @@ export class DynamoMessageRepository implements IMessageRepository {
                 TableName: this.tableName,
                 IndexName: 'TypeIndex', // Assumed GSI
                 KeyConditionExpression: '#type = :type',
-                ExpressionAttributeNames: {
-                    '#type': 'type', // type is reserved
-                },
                 ExpressionAttributeValues: {
                     ':type': type.getValue(),
                 },
+                ScanIndexForward: false, // Descending
             }),
         );
 
@@ -103,6 +101,7 @@ export class DynamoMessageRepository implements IMessageRepository {
                 ExpressionAttributeValues: {
                     ':sid': senderId,
                 },
+                ScanIndexForward: false, // Descending
             }),
         );
 
@@ -130,11 +129,13 @@ export class DynamoMessageRepository implements IMessageRepository {
             queryParams.IndexName = 'SenderIdIndex'; // Optimization
             queryParams.KeyConditionExpression = 'senderUserId = :sid';
             queryParams.ExpressionAttributeValues = { ':sid': filter.senderId };
+            queryParams.ScanIndexForward = false; // Descending
         } else if (filter.type && filter.type !== 'all') {
             queryParams.IndexName = 'TypeIndex';
             queryParams.KeyConditionExpression = '#type = :type';
             queryParams.ExpressionAttributeNames = { '#type': 'type' };
             queryParams.ExpressionAttributeValues = { ':type': filter.type };
+            queryParams.ScanIndexForward = false; // Descending
         } else {
             // Scan
         }
