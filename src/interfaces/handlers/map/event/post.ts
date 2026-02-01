@@ -15,6 +15,10 @@ import { DynamoMessageRepository } from '../../../../infrastructure/aws/dynamo/i
 import { DynamoUserMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoUserMessageRepository';
 import { Logger } from '../../../../shared/logger';
 
+import { InboxNotificationService } from '../../../../application/services/inbox/InboxNotificationService';
+import { FirebasePushNotificationService } from '../../../../infrastructure/firebase/notification/FirebasePushNotificationService';
+import { DynamoDeviceTokenRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoDeviceTokenRepository';
+
 const reverseGeocodingRepository = new ReverseGeocodingRepository();
 const mapRepository = new DynamoMapRepository();
 const pointEventRepository = new DynamoPointEventRepository();
@@ -24,12 +28,18 @@ const messageRepository = new DynamoMessageRepository();
 const userMessageRepository = new DynamoUserMessageRepository();
 const messageBroadcastRepository = new DynamoMessageBroadcastRepository();
 const userRepository = new DynamoUserRepository();
+
+const deviceTokenRepository = new DynamoDeviceTokenRepository();
+const pushNotificationService = new FirebasePushNotificationService(deviceTokenRepository);
+const inboxNotificationService = new InboxNotificationService(pushNotificationService);
+
 const messageSendingService = new MessageSendingService(
     profileRepository,
     messageRepository,
     userMessageRepository,
     messageBroadcastRepository,
     userRepository,
+    inboxNotificationService,
     new Logger('MessageSendingService'),
 );
 const threadCreateUseCase = new ThreadCreateUseCase(threadRepository, profileRepository, messageSendingService);

@@ -8,7 +8,11 @@ import { DynamoMessageRepository } from '../../../../infrastructure/aws/dynamo/i
 import { DynamoUserMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoUserMessageRepository';
 import { DynamoMessageBroadcastRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoMessageBroadcastRepository';
 import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
+import { InboxNotificationService } from '../../../../application/services/inbox/InboxNotificationService';
+import { FirebasePushNotificationService } from '../../../../infrastructure/firebase/notification/FirebasePushNotificationService';
+import { DynamoDeviceTokenRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoDeviceTokenRepository';
 import { DynamoProfileRepository } from '../../../../infrastructure/aws/dynamo/profile/DynamoProfileRepository';
+
 // Logger mock or simple console implementation since shared/logger is not fully visible, assuming console.
 class ConsoleLogger {
     info(message: string, meta?: any) {
@@ -32,13 +36,19 @@ const userRepository = new DynamoUserRepository();
 const profileRepository = new DynamoProfileRepository();
 const logger = new ConsoleLogger();
 
+// ... (existing loggers and repositories)
+const deviceTokenRepository = new DynamoDeviceTokenRepository();
+const pushNotificationService = new FirebasePushNotificationService(deviceTokenRepository);
+const inboxNotificationService = new InboxNotificationService(pushNotificationService);
+
 const service = new MessageSendingService(
     profileRepository,
     messageRepository,
     userMessageRepository,
     messageBroadcastRepository,
     userRepository,
-    logger as any, // Casting to satisfy Logger interface if strict
+    inboxNotificationService,
+    logger as any,
 );
 
 export const handler: APIGatewayProxyHandler = async (event): Promise<APIGatewayProxyResult> => {

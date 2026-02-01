@@ -288,6 +288,93 @@ Resources:
                 EntryPoints:
                     - index.ts
 
+    # Device Token
+    RegisterDeviceTokenFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/user/devicetoken/
+            Handler: post.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
+            Architectures:
+                - x86_64
+            Events:
+                RegisterDeviceToken:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user/device-token
+                        Method: POST
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - post.ts
+
+    DeleteDeviceTokenFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/user/devicetoken/
+            Handler: delete.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
+            Architectures:
+                - x86_64
+            Events:
+                DeleteDeviceToken:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user/device-token
+                        Method: DELETE
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - delete.ts
+
     MapFunction:
         Type: AWS::Serverless::Function
         Properties:
