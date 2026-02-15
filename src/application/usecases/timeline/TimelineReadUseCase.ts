@@ -19,6 +19,7 @@ export interface TimelineThreadItemCommon {
     childThreadIds: string[];
     mapPointInfoId: string | null;
     childThreadCount: number;
+    address: string | null;
 }
 
 export interface EventContent {
@@ -87,6 +88,7 @@ export class TimelineReadUseCase {
                     childThreadIds: primitives.childThreadIds,
                     mapPointInfoId: primitives.mapPointInfoId,
                     childThreadCount: primitives.childThreadIds.length,
+                    address: null,
                 };
 
                 if (primitives.mapPointInfoId) {
@@ -102,6 +104,7 @@ export class TimelineReadUseCase {
                                     detail: pointEvent.getDetail(),
                                     url: pointEvent.getUrl(),
                                     imageUrl: pointEvent.getImageUrl(),
+                                    address: null,
                                 },
                             };
                         }
@@ -166,6 +169,7 @@ export class TimelineReadByUserUseCase {
                     childThreadIds: primitives.childThreadIds,
                     mapPointInfoId: primitives.mapPointInfoId,
                     childThreadCount: primitives.childThreadIds.length,
+                    address: null,
                 };
 
                 if (primitives.mapPointInfoId) {

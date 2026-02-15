@@ -185,7 +185,11 @@ export class DynamoUserMessageRepository implements IUserMessageRepository {
             params.ExpressionAttributeValues = attrVals;
         }
 
-        if (filter.limit) params.Limit = filter.limit;
+        if (filter.limit) {
+            // DynamoDB does not support offset. We must fetch (limit + offset) and slice.
+            const offset = filter.offset || 0;
+            params.Limit = filter.limit + offset;
+        }
 
         console.log('[DynamoUserMessageRepository] findByFilter params:', JSON.stringify(params));
 
@@ -204,7 +208,20 @@ export class DynamoUserMessageRepository implements IUserMessageRepository {
             throw error;
         }
 
-        const msgs = result.Items ? result.Items.map((i) => this.mapToEntity(i)) : [];
+        let items = result.Items || [];
+
+        // Manual offset pagination
+        if (filter.offset && filter.offset > 0) {
+            items = items.slice(filter.offset);
+        }
+
+        // Ensure strictly respecting limit after offset slicing
+        // (DynamoDB Limit applies to the number of evaluated items before filter, but here we are talking about Query result items)
+        if (filter.limit && items.length > filter.limit) {
+            items = items.slice(0, filter.limit);
+        }
+
+        const msgs = items.map((i) => this.mapToEntity(i));
         return UserMessageCollection.create(msgs);
     }
 
