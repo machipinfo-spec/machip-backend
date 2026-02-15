@@ -1,13 +1,13 @@
 import { APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda';
 import { ListSystemMessagesUseCase } from '../../../../application/usecases/admin/ListSystemMessagesUseCase';
-import { MessageRepository } from '../../../../infrastructure/firebase/persistence/inbox/MessageRepository';
+import { DynamoMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoMessageRepository';
 
-const messageRepository = new MessageRepository();
+const messageRepository = new DynamoMessageRepository();
 
 export const handler: APIGatewayProxyHandler = async (event): Promise<APIGatewayProxyResult> => {
     const origin = event.headers?.origin || event.headers?.Origin || '';
-    const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001', 'https://tetra-web-chi.vercel.app'];
-    const allowOrigin = allowedOrigins.includes(origin) ? origin : '*';
+    const allowedOrigins = ['https://tetra-backoffice.vercel.app', 'http://localhost:3000', 'http://localhost:3001'];
+    const allowOrigin = allowedOrigins.includes(origin) ? origin : '';
 
     const corsHeaders = {
         'Access-Control-Allow-Origin': allowOrigin,

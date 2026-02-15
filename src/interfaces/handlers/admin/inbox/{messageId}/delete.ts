@@ -1,8 +1,8 @@
 import { APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda';
 import { DeleteSystemMessageUseCase } from '../../../../../application/usecases/admin/DeleteSystemMessageUseCase';
-import { MessageRepository } from '../../../../../infrastructure/firebase/persistence/inbox/MessageRepository';
+import { DynamoMessageRepository } from '../../../../../infrastructure/aws/dynamo/inbox/DynamoMessageRepository';
 
-const messageRepository = new MessageRepository();
+const messageRepository = new DynamoMessageRepository();
 
 export const handler: APIGatewayProxyHandler = async (event): Promise<APIGatewayProxyResult> => {
     const origin = event.headers?.origin || event.headers?.Origin || '';

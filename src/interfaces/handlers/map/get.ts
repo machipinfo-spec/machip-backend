@@ -1,18 +1,18 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { MapRepository } from '../../../infrastructure/firebase/persistence/map/MapRepository';
-import { ThreadRepository } from '../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
-import { PointEventRepository } from '../../../infrastructure/firebase/persistence/map/PointEventRepository';
+import { DynamoMapRepository } from '../../../infrastructure/aws/dynamo/map/DynamoMapRepository';
+import { DynamoThreadRepository } from '../../../infrastructure/aws/dynamo/timeline/DynamoThreadRepository';
+import { DynamoPointEventRepository } from '../../../infrastructure/aws/dynamo/map/DynamoPointEventRepository';
 import { GetPointInfoListUseCase } from '../../../application/usecases/map/GetPointInfoListUseCase';
 import { HandlerUtil } from '../util';
 import { GetUserUseCase } from '../../../application/usecases/user/GetUserUseCase';
-import { UserRepository } from '../../../infrastructure/firebase/persistence/user/UserRepository';
+import { DynamoUserRepository } from '../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 
-const mapRepository = new MapRepository();
-const threadRepository = new ThreadRepository();
-const pointEventRepository = new PointEventRepository();
+const mapRepository = new DynamoMapRepository();
+const threadRepository = new DynamoThreadRepository();
+const pointEventRepository = new DynamoPointEventRepository();
 const useCase = new GetPointInfoListUseCase(mapRepository, threadRepository, pointEventRepository);
 const handlerUtil = new HandlerUtil();
-const userRepository = new UserRepository();
+const userRepository = new DynamoUserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 
 const corsHeaders = {

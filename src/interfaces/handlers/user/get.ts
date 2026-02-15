@@ -1,8 +1,8 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { GetUserUseCase } from '../../../application/usecases/user/GetUserUseCase';
-import { UserRepository } from '../../../infrastructure/firebase/persistence/user/UserRepository';
+import { DynamoUserRepository } from '../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 
-const repository = new UserRepository();
+const repository = new DynamoUserRepository();
 const useCase = new GetUserUseCase(repository);
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',

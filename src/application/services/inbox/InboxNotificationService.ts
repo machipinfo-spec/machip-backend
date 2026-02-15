@@ -1,4 +1,5 @@
 import { Logger } from '../../../shared/logger';
+import { IPushNotificationService } from '../../../domain/services/notification/IPushNotificationService';
 
 /**
  * インボックス通知サービス
@@ -7,7 +8,7 @@ import { Logger } from '../../../shared/logger';
 export class InboxNotificationService {
     private readonly logger: Logger;
 
-    constructor() {
+    constructor(private readonly pushNotificationService: IPushNotificationService) {
         this.logger = new Logger('InboxNotificationService');
     }
 
@@ -17,28 +18,31 @@ export class InboxNotificationService {
     async notifyNewMessage(data: {
         userId: string;
         messageId: string;
-        messageType: 'system' | 'reply';
+        messageType: 'system' | 'reply' | 'newEvent';
         subject: string;
         senderName: string;
     }): Promise<void> {
         try {
-            this.logger.info('新着メッセージ通知送信', { data });
+            this.logger.info('新着メッセージ通知送信開始', { userId: data.userId });
 
-            // 実際の通知実装は外部サービス（FCM、メール、WebSocket等）と連携
-            // ここではログ出力のみ
+            const title = `新着メッセージ: ${data.subject}`;
+            let body = `${data.senderName}からメッセージが届きました`;
 
-            // WebSocket通知の例
-            // await this.webSocketService.sendToUser(data.userId, {
-            //     type: 'NEW_MESSAGE',
-            //     payload: data
-            // });
+            if (data.messageType === 'system') {
+                body = `[システム] ${data.subject}`;
+            } else if (data.messageType === 'newEvent') {
+                body = `[新着イベント] ${data.subject}`;
+            }
 
-            // プッシュ通知の例
-            // await this.pushNotificationService.send(data.userId, {
-            //     title: `新着メッセージ: ${data.subject}`,
-            //     body: `${data.senderName}からメッセージが届きました`,
-            //     data: { messageId: data.messageId }
-            // });
+            await this.pushNotificationService.sendToUser(data.userId, {
+                title,
+                body,
+                data: {
+                    messageId: data.messageId,
+                    type: data.messageType,
+                    url: `/inbox/${data.messageId}`, // フロントエンドの遷移先URL
+                },
+            });
 
             this.logger.info('新着メッセージ通知送信完了', { userId: data.userId });
         } catch (error) {

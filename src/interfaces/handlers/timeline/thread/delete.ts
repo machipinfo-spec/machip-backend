@@ -1,16 +1,15 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { ThreadRepository } from '../../../../infrastructure/firebase/persistence/timeline/ThreadRepository';
-import { ReactionRepository } from '../../../../infrastructure/firebase/persistence/timeline/ReactionRepository';
+import { DynamoThreadRepository } from '../../../../infrastructure/aws/dynamo/timeline/DynamoThreadRepository';
 import { ThreadDeleteUseCase } from '../../../../application/usecases/timeline/ThreadDeleteUseCase';
 import { HandlerUtil } from '../../util';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
-import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
-import { MapRepository } from '../../../../infrastructure/firebase/persistence/map/MapRepository';
+import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
+import { DynamoMapRepository } from '../../../../infrastructure/aws/dynamo/map/DynamoMapRepository';
 
-const userRepository = new UserRepository();
+const userRepository = new DynamoUserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
-const threadRepository = new ThreadRepository();
-const mapRepository = new MapRepository();
+const threadRepository = new DynamoThreadRepository();
+const mapRepository = new DynamoMapRepository();
 const useCase = new ThreadDeleteUseCase(threadRepository, mapRepository);
 const handlerUtil = new HandlerUtil();
 

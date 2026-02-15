@@ -1,5 +1,5 @@
 import { MessageDeliveryService } from '../../../domain/services/inbox/MessageDeliveryService';
-import { InboxRepositoryModule } from '../../../infrastructure/firebase/persistence/inbox/InboxRepositoryModule';
+import { InboxRepositoryModule } from '../../../infrastructure/repositories/inbox/InboxRepositoryModule';
 import { Logger } from '../../../shared/logger';
 
 /**

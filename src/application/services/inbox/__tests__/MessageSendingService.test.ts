@@ -18,6 +18,7 @@ import { SystemMessageContent } from '../../../../domain/value-object/inbox/Syst
 import { CreatedAt } from '../../../../domain/value-object/inbox/CreatedAt';
 import { ReadStatus } from '../../../../domain/value-object/inbox/ReadStatus';
 import { UserMessage } from '../../../../domain/value-object/inbox/UserMessage';
+import { InboxNotificationService } from '../../inbox/InboxNotificationService';
 
 // Mock dependencies
 jest.mock('uuid', () => ({
@@ -32,6 +33,7 @@ describe('MessageSendingService', () => {
     let mockBroadcastRepository: jest.Mocked<IMessageBroadcastRepository>;
     let mockUserRepository: jest.Mocked<IUserRepository>;
     let mockLogger: jest.Mocked<Logger>;
+    let mockNotificationService: jest.Mocked<InboxNotificationService>;
 
     const senderUserIdStr = '11111111-1234-4000-8000-111111111111';
     const targetUserIdStr = '22222222-1234-4000-8000-222222222222';
@@ -62,6 +64,10 @@ describe('MessageSendingService', () => {
             findAll: jest.fn(),
         } as any;
 
+        mockNotificationService = {
+            notifyNewMessage: jest.fn(),
+        } as any;
+
         const logger = new Logger('Test');
         mockLogger = {
             info: jest.fn(),
@@ -76,6 +82,7 @@ describe('MessageSendingService', () => {
             mockUserMessageRepository,
             mockBroadcastRepository,
             mockUserRepository,
+            mockNotificationService,
             mockLogger,
         );
 
@@ -112,7 +119,10 @@ describe('MessageSendingService', () => {
             await service.sendMessage(baseSystemRequest);
 
             expect(mockProfileRepository.save).toHaveBeenCalled();
-            expect(mockLogger.info).toHaveBeenCalledWith('メッセージ送信サービス開始', expect.anything());
+            expect(mockLogger.info).toHaveBeenCalledWith(
+                'MessageSendingService: send message start',
+                expect.anything(),
+            );
         });
 
         it('should save message', async () => {
@@ -124,6 +134,7 @@ describe('MessageSendingService', () => {
             const result = await service.sendMessage(baseSystemRequest);
 
             expect(mockUserMessageRepository.save).toHaveBeenCalledWith(expect.any(UserMessage));
+            expect(mockNotificationService.notifyNewMessage).toHaveBeenCalled(); // Added check
             expect(result.deliveredCount).toBe(1);
             expect(result.success).toBe(true);
         });
@@ -140,6 +151,7 @@ describe('MessageSendingService', () => {
             expect(mockBroadcastRepository.save).toHaveBeenCalled(); // create
             expect(mockUserMessageRepository.saveMultiple).toHaveBeenCalled();
             expect(mockBroadcastRepository.update).toHaveBeenCalled(); // update progress
+            expect(mockNotificationService.notifyNewMessage).toHaveBeenCalledTimes(2); // Added check
             expect(result.deliveredCount).toBe(2);
             expect(result.broadcastId).toBeDefined();
         });

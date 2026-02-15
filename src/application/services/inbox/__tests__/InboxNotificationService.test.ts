@@ -17,9 +17,13 @@ jest.mock('../../../../shared/logger', () => {
 
 describe('InboxNotificationService', () => {
     let service: InboxNotificationService;
+    let mockPushService: any;
 
     beforeEach(() => {
-        service = new InboxNotificationService();
+        mockPushService = {
+            sendToUser: jest.fn().mockResolvedValue(undefined),
+        };
+        service = new InboxNotificationService(mockPushService);
         jest.clearAllMocks();
     });
 
@@ -35,7 +39,7 @@ describe('InboxNotificationService', () => {
 
             await service.notifyNewMessage(data);
 
-            expect(mockLoggerInstance.info).toHaveBeenCalledWith('新着メッセージ通知送信', { data });
+            expect(mockLoggerInstance.info).toHaveBeenCalledWith('新着メッセージ通知送信開始', { userId: data.userId });
             expect(mockLoggerInstance.info).toHaveBeenCalledWith('新着メッセージ通知送信完了', { userId: data.userId });
         });
 

@@ -158,8 +158,8 @@ export class ThreadQueryUseCase {
             }),
         );
 
-        // 日付順にソート (ThreadResultの要件によるが、PointEventでソートされていてもThread取得順序が保証されないため)
-        // threadItems.sort((a, b) => ...); // 必要であれば実装
+        // 日付順にソート (createdAt 降順)
+        threadItems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
         return {
             threads: threadItems,

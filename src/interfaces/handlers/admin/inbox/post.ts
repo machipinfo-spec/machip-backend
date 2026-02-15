@@ -4,11 +4,15 @@ import {
     MessageSendingRequest,
 } from '../../../../application/services/inbox/MessageSendingService';
 import { SendSystemMessageUseCase } from '../../../../application/usecases/admin/SendSystemMessageUseCase';
-import { MessageRepository } from '../../../../infrastructure/firebase/persistence/inbox/MessageRepository';
-import { UserMessageRepository } from '../../../../infrastructure/firebase/persistence/inbox/UserMessageRepository';
-import { MessageBroadcastRepository } from '../../../../infrastructure/firebase/persistence/inbox/MessageBroadcastRepository';
-import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
-import { ProfileRepository } from '../../../../infrastructure/firebase/persistence/profile/ProfileRepository';
+import { DynamoMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoMessageRepository';
+import { DynamoUserMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoUserMessageRepository';
+import { DynamoMessageBroadcastRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoMessageBroadcastRepository';
+import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
+import { InboxNotificationService } from '../../../../application/services/inbox/InboxNotificationService';
+import { FirebasePushNotificationService } from '../../../../infrastructure/firebase/notification/FirebasePushNotificationService';
+import { DynamoDeviceTokenRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoDeviceTokenRepository';
+import { DynamoProfileRepository } from '../../../../infrastructure/aws/dynamo/profile/DynamoProfileRepository';
+
 // Logger mock or simple console implementation since shared/logger is not fully visible, assuming console.
 class ConsoleLogger {
     info(message: string, meta?: any) {
@@ -25,12 +29,17 @@ class ConsoleLogger {
     }
 }
 
-const messageRepository = new MessageRepository();
-const userMessageRepository = new UserMessageRepository();
-const messageBroadcastRepository = new MessageBroadcastRepository();
-const userRepository = new UserRepository();
-const profileRepository = new ProfileRepository();
+const messageRepository = new DynamoMessageRepository();
+const userMessageRepository = new DynamoUserMessageRepository();
+const messageBroadcastRepository = new DynamoMessageBroadcastRepository();
+const userRepository = new DynamoUserRepository();
+const profileRepository = new DynamoProfileRepository();
 const logger = new ConsoleLogger();
+
+// ... (existing loggers and repositories)
+const deviceTokenRepository = new DynamoDeviceTokenRepository();
+const pushNotificationService = new FirebasePushNotificationService(deviceTokenRepository);
+const inboxNotificationService = new InboxNotificationService(pushNotificationService);
 
 const service = new MessageSendingService(
     profileRepository,
@@ -38,7 +47,8 @@ const service = new MessageSendingService(
     userMessageRepository,
     messageBroadcastRepository,
     userRepository,
-    logger as any, // Casting to satisfy Logger interface if strict
+    inboxNotificationService,
+    logger as any,
 );
 
 export const handler: APIGatewayProxyHandler = async (event): Promise<APIGatewayProxyResult> => {
@@ -46,8 +56,8 @@ export const handler: APIGatewayProxyHandler = async (event): Promise<APIGateway
 
     // Dynamic CORS handling
     const origin = event.headers?.origin || event.headers?.Origin || '';
-    const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001', 'https://tetra-web-chi.vercel.app'];
-    const allowOrigin = allowedOrigins.includes(origin) ? origin : '*';
+    const allowedOrigins = ['https://tetra-backoffice.vercel.app', 'http://localhost:3000', 'http://localhost:3001'];
+    const allowOrigin = allowedOrigins.includes(origin) ? origin : '';
 
     const corsHeaders = {
         'Access-Control-Allow-Origin': allowOrigin,

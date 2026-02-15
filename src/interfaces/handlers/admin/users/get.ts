@@ -1,10 +1,10 @@
 import { APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda';
-import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
-import { ProfileRepository } from '../../../../infrastructure/firebase/persistence/profile/ProfileRepository';
+import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
+import { DynamoProfileRepository } from '../../../../infrastructure/aws/dynamo/profile/DynamoProfileRepository';
 import { AdminUserListUseCase } from '../../../../application/usecases/admin/AdminUserListUseCase';
 
-const userRepository = new UserRepository();
-const profileRepository = new ProfileRepository();
+const userRepository = new DynamoUserRepository();
+const profileRepository = new DynamoProfileRepository();
 
 export const handler: APIGatewayProxyHandler = async (event): Promise<APIGatewayProxyResult> => {
     console.log('AdminUserListHandler invoked');

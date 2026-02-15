@@ -1,5 +1,5 @@
 import { InboxBatchService } from '../InboxBatchService';
-import { InboxRepositoryModule } from '../../../../infrastructure/firebase/persistence/inbox/InboxRepositoryModule';
+import { InboxRepositoryModule } from '../../../../infrastructure/repositories/inbox/InboxRepositoryModule';
 import { IMessageRepository } from '../../../../domain/repositories/inbox/IMessageRepository';
 import { IUserMessageRepository } from '../../../../domain/repositories/inbox/IUserMessageRepository';
 import { IMessageBroadcastRepository } from '../../../../domain/repositories/inbox/IMessageBroadcastRepository';

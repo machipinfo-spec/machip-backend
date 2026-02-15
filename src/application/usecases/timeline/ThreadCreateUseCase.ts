@@ -88,7 +88,6 @@ export class ThreadCreateUseCase {
         });
 
         const parentThread = parentThreadId ? ThreadId.fromExisting(parentThreadId) : null;
-        const threadId = ThreadId.create();
 
         let thread;
         if (!pointInfoId) {
@@ -97,7 +96,7 @@ export class ThreadCreateUseCase {
                 UserId.fromExisting(ownerUserId),
                 imageUrl,
                 parentThread,
-                threadId,
+                null,
             );
         } else {
             thread = Thread.createFromMapPoint(
@@ -105,13 +104,13 @@ export class ThreadCreateUseCase {
                 UserId.fromExisting(ownerUserId),
                 PointInfoId.fromExisting(pointInfoId),
                 imageUrl,
-                threadId,
+                null,
             );
         }
 
         // ... saving logic ...
         await this.threadRepository.save(thread);
-        console.log('ThreadCreateUseCase: Thread saved', threadId.getValue());
+        console.log('ThreadCreateUseCase: Thread saved', thread.getThreadId().getValue());
 
         // 親スレッドが存在する場合、親スレッドの子リストに追加
         if (parentThreadId) {

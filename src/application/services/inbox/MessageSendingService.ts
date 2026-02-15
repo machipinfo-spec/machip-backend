@@ -72,6 +72,10 @@ export interface MessageSendingResult {
     message: string;
 }
 
+import { InboxNotificationService } from './InboxNotificationService';
+
+// ... imports ...
+
 export class MessageSendingService {
     constructor(
         private readonly profileRepository: IProfileRepository,
@@ -79,6 +83,7 @@ export class MessageSendingService {
         private readonly userMessageRepository: IUserMessageRepository,
         private readonly messageBroadcastRepository: IMessageBroadcastRepository,
         private readonly userRepository: IUserRepository,
+        private readonly notificationService: InboxNotificationService, // Added
         private readonly logger: Logger,
     ) {}
 
@@ -87,26 +92,38 @@ export class MessageSendingService {
      */
     async sendMessage(request: MessageSendingRequest): Promise<MessageSendingResult> {
         try {
-            this.logger.info('メッセージ送信サービス開始', { request });
+            this.logger.info('MessageSendingService: send message start', {
+                type: request.type,
+                subject: request.subject,
+                senderUserId: request.senderUserId,
+                deliveryType: request.deliveryType,
+                targetCount: request.targetUserIds?.length ?? 0,
+            });
 
             // 1. バリデーション
             this.validateRequest(request);
+            this.logger.info('MessageSendingService: validation passed');
 
             // 2. 送信者の取得または作成
             const sender = await this.getOrCreateSender(request);
+            this.logger.info('MessageSendingService: sender resolved', { senderId: sender.userId.getValue() });
 
             // 3. メッセージ作成
             const message = this.createMessage(request);
+            this.logger.info('MessageSendingService: message created', { messageId: message.getId().getValue() });
 
             // 4. メッセージ保存
             await this.messageRepository.save(message);
+            this.logger.info('MessageSendingService: message saved');
 
             // 5. 配信実行
+
             const deliveryResult = await this.executeDelivery(message, request);
 
-            this.logger.info('メッセージ送信サービス完了', {
+            this.logger.info('MessageSendingService: delivery completed', {
                 messageId: message.getId().getValue(),
                 deliveredCount: deliveryResult.deliveredCount,
+                broadcastId: deliveryResult.broadcastId,
             });
 
             return {
@@ -117,7 +134,7 @@ export class MessageSendingService {
                 message: 'メッセージが正常に送信されました',
             };
         } catch (error) {
-            this.logger.error('メッセージ送信サービスエラー', { error, request });
+            this.logger.error('MessageSendingService: send message error', { error, request });
             throw error;
         }
     }
@@ -270,6 +287,7 @@ export class MessageSendingService {
         deliveredCount: number;
         broadcastId?: string;
     }> {
+        this.logger.info('MessageSendingService: execute delivery', { deliveryType: request.deliveryType });
         switch (request.deliveryType) {
             case 'single':
                 return this.deliverToSingleUser(message, request.targetUserIds![0]);
@@ -280,6 +298,7 @@ export class MessageSendingService {
             case 'all':
                 const allUsers = await this.userRepository.findAll();
                 const allUserIds = allUsers.map((user) => user.userId.getValue());
+                this.logger.info('MessageSendingService: deliver to all', { totalUsers: allUserIds.length });
                 return this.deliverToMultipleUsers(message, allUserIds);
 
             default:
@@ -293,10 +312,22 @@ export class MessageSendingService {
     ): Promise<{
         deliveredCount: number;
     }> {
+        this.logger.info('MessageSendingService: deliver to single user', { userId: userIdString });
         const userId = UserId.fromExisting(userIdString);
         const userMessage = MessageDeliveryService.deliverToUser(message, userId);
 
         await this.userMessageRepository.save(userMessage);
+        this.logger.info('MessageSendingService: user message saved', {
+            userMessageId: userMessage.getId().getValue(),
+        });
+
+        await this.notificationService.notifyNewMessage({
+            userId: userIdString,
+            messageId: message.getId().getValue(),
+            messageType: message.getType().getValue() as any, // Cast needed if types don't match exactly
+            subject: message.getSubject().getValue(),
+            senderName: 'System',
+        });
 
         return { deliveredCount: 1 };
     }
@@ -308,28 +339,70 @@ export class MessageSendingService {
         deliveredCount: number;
         broadcastId: string;
     }> {
+        this.logger.info('MessageSendingService: deliver to multiple users', { count: userIdStrings.length });
         const userIds = userIdStrings.map((id) => UserId.fromExisting(id));
         const broadcast = MessageDeliveryService.createBroadcast(message, userIds);
 
         broadcast.startProcessing();
         await this.messageBroadcastRepository.save(broadcast);
+        this.logger.info('MessageSendingService: broadcast saved', { broadcastId: broadcast.getId().getValue() });
 
         const userMessages = MessageDeliveryService.generateUserMessagesFromBroadcast(broadcast);
+        this.logger.info('MessageSendingService: generated user messages', { count: userMessages.length });
 
         try {
             await this.userMessageRepository.saveMultiple(userMessages);
+            this.logger.info('MessageSendingService: user messages saved');
 
             userMessages.forEach(() => broadcast.incrementDelivered());
             await this.messageBroadcastRepository.update(broadcast);
+
+            // Notify users
+            await this.sendNotifications(userMessages, message);
 
             return {
                 deliveredCount: userMessages.length,
                 broadcastId: broadcast.getId().getValue(),
             };
         } catch (error) {
+            this.logger.error('MessageSendingService: delivery failed', { error });
             userMessages.forEach(() => broadcast.incrementFailed());
             await this.messageBroadcastRepository.update(broadcast);
             throw error;
         }
+    }
+
+    private async sendNotifications(userMessages: any[], message: Message): Promise<void> {
+        // We need sender Name.
+        // For system messages, it is "System".
+        // For others, we might need to fetch.
+        // But for this task, mostly System messages are concern?
+        // Let's retry fetching profile or just generic name.
+
+        const senderId = message.getSenderUserId().getValue();
+        let senderName = 'New Message';
+        // Optimization: We could have passed sender profile to executeDelivery.
+        // But let's just fetch it again or cache it? NO, clean code first.
+
+        try {
+            const senderProfile = await this.profileRepository.findByUserId(message.getSenderUserId());
+            if (senderProfile) {
+                senderName = senderProfile.userName.getValue();
+            }
+        } catch (e) {
+            this.logger.warn('Failed to fetch sender profile for notification', { senderId });
+        }
+
+        const notifications = userMessages.map((um) => {
+            return this.notificationService.notifyNewMessage({
+                userId: um.getUserId().getValue(),
+                messageId: message.getId().getValue(),
+                messageType: message.getType().getValue() as any,
+                subject: message.getSubject().getValue(),
+                senderName: senderName,
+            });
+        });
+
+        await Promise.all(notifications);
     }
 }

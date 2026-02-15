@@ -36,6 +36,17 @@ Globals:
                 COGNITO_USER_POOL_ID: !Ref TetraUserPool
                 COGNITO_CLIENT_ID: !Ref TetraUserPoolClient
                 BLOB_BASE_URL: 'https://tetra-images-poc.s3.ap-northeast-1.amazonaws.com'
+                USER_MESSAGE_TABLE_NAME: !Ref UserMessagesTable
+                POINT_INFO_TABLE_NAME: !Ref PointInfosTable
+                POINT_EVENT_TABLE_NAME: !Ref PointEventsTable
+                PROFILE_TABLE_NAME: !Ref ProfilesTable
+                USER_TABLE_NAME: !Ref UsersTable
+                DEVICE_TOKEN_TABLE_NAME: !Ref DeviceTokensTable
+                THREAD_TABLE_NAME: !Ref ThreadsTable
+                RESPONSE_TABLE_NAME: !Ref ResponsesTable
+                REACTION_TABLE_NAME: !Ref ReactionsTable
+                MESSAGE_TABLE_NAME: !Ref MessagesTable
+                BROADCAST_TABLE_NAME: !Ref MessageBroadcastsTable
 Resources:
     Tetra:
         Type: AWS::Serverless::Api
@@ -222,6 +233,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
                 - Statement:
@@ -265,6 +288,93 @@ Resources:
                 EntryPoints:
                     - index.ts
 
+    # Device Token
+    RegisterDeviceTokenFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/user/devicetoken/
+            Handler: post.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
+            Architectures:
+                - x86_64
+            Events:
+                RegisterDeviceToken:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user/device-token
+                        Method: POST
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - post.ts
+
+    DeleteDeviceTokenFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/user/devicetoken/
+            Handler: delete.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
+            Architectures:
+                - x86_64
+            Events:
+                DeleteDeviceToken:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user/device-token
+                        Method: DELETE
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - delete.ts
+
     MapFunction:
         Type: AWS::Serverless::Function
         Properties:
@@ -276,6 +386,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/google/*'
                 - S3CrudPolicy:
@@ -319,6 +441,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/google/*'
                 - S3CrudPolicy:
@@ -354,6 +488,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/google/*'
                 - S3CrudPolicy:
@@ -390,6 +536,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
             Architectures:
@@ -424,6 +582,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
             Architectures:
@@ -474,6 +644,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
             Architectures:
@@ -508,6 +690,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
             Architectures:
@@ -558,6 +752,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
             Architectures:
@@ -599,6 +805,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
             Architectures:
@@ -632,6 +850,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
             Architectures:
@@ -665,6 +895,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
             Architectures:
@@ -706,6 +948,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
             Architectures:
@@ -777,6 +1031,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
             Architectures:
@@ -795,6 +1061,13 @@ Resources:
                         RestApiId: !Ref TetraAdmin
                         Path: /admin/inbox/messages
                         Method: GET
+
+                OptionsSystemMessages:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref TetraAdmin
+                        Path: /admin/inbox/messages
+                        Method: OPTIONS
 
         Metadata:
             BuildMethod: esbuild
@@ -816,6 +1089,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
             Architectures:
@@ -848,6 +1133,18 @@ Resources:
             Policies:
                 - SSMParameterWithSlashPrefixReadPolicy:
                       ParameterName: '/tetra/firebase/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
             Architectures:
                 - x86_64
             Events:
@@ -896,6 +1193,300 @@ Resources:
                 Sourcemap: true
                 EntryPoints:
                     - index.ts
+
+    # ============================
+    #  DynamoDB Tables
+    # ============================
+    MessagesTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: 'Messages'
+            AttributeDefinitions:
+                - AttributeName: id
+                  AttributeType: S
+                - AttributeName: type
+                  AttributeType: S
+                - AttributeName: senderUserId
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: id
+                  KeyType: HASH
+            GlobalSecondaryIndexes:
+                - IndexName: TypeIndex
+                  KeySchema:
+                      - AttributeName: type
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+                - IndexName: SenderIdIndex
+                  KeySchema:
+                      - AttributeName: senderUserId
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+            BillingMode: PAY_PER_REQUEST
+
+    MessageBroadcastsTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: 'MessageBroadcasts'
+            AttributeDefinitions:
+                - AttributeName: id
+                  AttributeType: S
+                - AttributeName: messageId
+                  AttributeType: S
+                - AttributeName: status
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: id
+                  KeyType: HASH
+            GlobalSecondaryIndexes:
+                - IndexName: MessageIdIndex
+                  KeySchema:
+                      - AttributeName: messageId
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+                - IndexName: StatusIndex
+                  KeySchema:
+                      - AttributeName: status
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+            BillingMode: PAY_PER_REQUEST
+
+    UserMessagesTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: 'UserMessages'
+            AttributeDefinitions:
+                - AttributeName: id
+                  AttributeType: S
+                - AttributeName: userId
+                  AttributeType: S
+                - AttributeName: messageId
+                  AttributeType: S
+                - AttributeName: deliveredAt
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: id
+                  KeyType: HASH
+            GlobalSecondaryIndexes:
+                - IndexName: UserIdIndex
+                  KeySchema:
+                      - AttributeName: userId
+                        KeyType: HASH
+                      - AttributeName: deliveredAt
+                        KeyType: RANGE
+                  Projection:
+                      ProjectionType: ALL
+                - IndexName: MessageIdIndex
+                  KeySchema:
+                      - AttributeName: messageId
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+            BillingMode: PAY_PER_REQUEST
+
+    PointInfosTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: 'PointInfos'
+            AttributeDefinitions:
+                - AttributeName: id
+                  AttributeType: S
+                - AttributeName: category
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: id
+                  KeyType: HASH
+            GlobalSecondaryIndexes:
+                - IndexName: CategoryIndex
+                  KeySchema:
+                      - AttributeName: category
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+            BillingMode: PAY_PER_REQUEST
+
+    PointEventsTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: 'PointEvents'
+            AttributeDefinitions:
+                - AttributeName: id
+                  AttributeType: S
+                - AttributeName: pointInfoId
+                  AttributeType: S
+                - AttributeName: threadName
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: id
+                  KeyType: HASH
+            GlobalSecondaryIndexes:
+                - IndexName: PointInfoIdIndex
+                  KeySchema:
+                      - AttributeName: pointInfoId
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+                - IndexName: ThreadNameIndex
+                  KeySchema:
+                      - AttributeName: threadName
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+            BillingMode: PAY_PER_REQUEST
+
+    ProfilesTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: 'Profiles'
+            AttributeDefinitions:
+                - AttributeName: profileId
+                  AttributeType: S
+                - AttributeName: userId
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: profileId
+                  KeyType: HASH
+            GlobalSecondaryIndexes:
+                - IndexName: UserIdIndex
+                  KeySchema:
+                      - AttributeName: userId
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+            BillingMode: PAY_PER_REQUEST
+
+    UsersTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: 'Users'
+            AttributeDefinitions:
+                - AttributeName: userId
+                  AttributeType: S
+                - AttributeName: authId
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: userId
+                  KeyType: HASH
+            GlobalSecondaryIndexes:
+                - IndexName: AuthIdIndex
+                  KeySchema:
+                      - AttributeName: authId
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+            BillingMode: PAY_PER_REQUEST
+
+    DeviceTokensTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: 'DeviceTokens'
+            AttributeDefinitions:
+                - AttributeName: token
+                  AttributeType: S
+                - AttributeName: userId
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: token
+                  KeyType: HASH
+            GlobalSecondaryIndexes:
+                - IndexName: UserIdIndex
+                  KeySchema:
+                      - AttributeName: userId
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+            BillingMode: PAY_PER_REQUEST
+
+    ThreadsTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: 'Threads'
+            AttributeDefinitions:
+                - AttributeName: id
+                  AttributeType: S
+                - AttributeName: ownerUserId
+                  AttributeType: S
+                - AttributeName: parentThreadId
+                  AttributeType: S
+                - AttributeName: mapPointInfoId
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: id
+                  KeyType: HASH
+            GlobalSecondaryIndexes:
+                - IndexName: OwnerUserIdIndex
+                  KeySchema:
+                      - AttributeName: ownerUserId
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+                - IndexName: ParentThreadIdIndex
+                  KeySchema:
+                      - AttributeName: parentThreadId
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+                - IndexName: MapPointInfoIdIndex
+                  KeySchema:
+                      - AttributeName: mapPointInfoId
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+            BillingMode: PAY_PER_REQUEST
+
+    ResponsesTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: 'Responses'
+            AttributeDefinitions:
+                - AttributeName: id
+                  AttributeType: S
+                - AttributeName: parentId
+                  AttributeType: S
+                - AttributeName: ownerUserId
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: id
+                  KeyType: HASH
+            GlobalSecondaryIndexes:
+                - IndexName: ParentIdIndex
+                  KeySchema:
+                      - AttributeName: parentId
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+                - IndexName: OwnerUserIdIndex
+                  KeySchema:
+                      - AttributeName: ownerUserId
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+            BillingMode: PAY_PER_REQUEST
+
+    ReactionsTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: 'Reactions'
+            AttributeDefinitions:
+                - AttributeName: id
+                  AttributeType: S
+                - AttributeName: parentId
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: id
+                  KeyType: HASH
+            GlobalSecondaryIndexes:
+                - IndexName: ParentIdIndex
+                  KeySchema:
+                      - AttributeName: parentId
+                        KeyType: HASH
+                  Projection:
+                      ProjectionType: ALL
+            BillingMode: PAY_PER_REQUEST
 
 Outputs:
     TetraApiEndpoint:

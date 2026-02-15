@@ -43,3 +43,10 @@ export const verifyIdToken = async (token: string): Promise<admin.auth.DecodedId
         return null;
     }
 };
+
+// Messagingインスタンスを取得する非同期関数
+import { getMessaging } from 'firebase-admin/messaging';
+export async function getMessagingService() {
+    const app = await initializeFirebaseAdmin();
+    return getMessaging(app);
+}

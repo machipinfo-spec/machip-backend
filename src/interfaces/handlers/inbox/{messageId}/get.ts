@@ -1,8 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { GetMessageDetailUseCase } from '../../../../application/usecases/inbox/GetMessageDetailUseCase';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
-import { InboxRepositoryModule } from '../../../../infrastructure/firebase/persistence/inbox/InboxRepositoryModule';
-import { UserRepository } from '../../../../infrastructure/firebase/persistence/user/UserRepository';
+import { DynamoMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoMessageRepository';
+import { DynamoUserMessageRepository } from '../../../../infrastructure/aws/dynamo/inbox/DynamoUserMessageRepository';
+import { DynamoProfileRepository } from '../../../../infrastructure/aws/dynamo/profile/DynamoProfileRepository';
+import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 import { Logger } from '../../../../shared/logger';
 import { HandlerUtil } from '../../util';
 
@@ -12,7 +14,7 @@ const corsHeaders = {
     'Access-Control-Allow-Methods': 'GET,OPTIONS',
 };
 const handlerUtil = new HandlerUtil();
-const userRepository = new UserRepository();
+const userRepository = new DynamoUserRepository();
 const getUserUseCase = new GetUserUseCase(userRepository);
 
 /**
@@ -67,9 +69,9 @@ async function handleGetMessageDetail(
 ): Promise<APIGatewayProxyResult> {
     try {
         // リポジトリの初期化
-        const messageRepository = InboxRepositoryModule.getMessageRepository();
-        const userMessageRepository = InboxRepositoryModule.getUserMessageRepository();
-        const profileRepository = InboxRepositoryModule.getProfileRepository();
+        const messageRepository = new DynamoMessageRepository();
+        const userMessageRepository = new DynamoUserMessageRepository();
+        const profileRepository = new DynamoProfileRepository();
 
         // ユースケース実行
         const getMessageDetailUseCase = new GetMessageDetailUseCase(
