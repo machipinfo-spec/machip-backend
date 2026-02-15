@@ -9,6 +9,7 @@ import { Profile } from '../../../domain/entities/profile/profile';
 import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
 import { MessageSendingService } from '../../services/inbox/MessageSendingService';
 import { MimeTypeHelper } from '../../../shared/mimeTypeHelper';
+import { IContentModerationQueue } from '../../../domain/repositories/queue/IContentModerationQueue';
 
 // ====== S3 クライアント ======
 const s3 = new S3Client({ region: process.env.AWS_REGION || 'ap-northeast-1' });
@@ -43,6 +44,7 @@ export class ThreadCreateUseCase {
         private readonly threadRepository: IThreadRepository,
         private readonly profileRepository: IProfileRepository,
         private readonly messageSendingService: MessageSendingService,
+        private readonly contentModerationQueue: IContentModerationQueue,
     ) {}
     private async convertToThreadItem(thread: Thread): Promise<ThreadItem> {
         const p = thread.toPrimitives();
@@ -139,6 +141,21 @@ export class ThreadCreateUseCase {
                 });
             }
         }
+
+        // Send to Content Moderation Queue (Async)
+        try {
+            await this.contentModerationQueue.sendMessage({
+                targetType: 'thread', // Treats both root threads and replies (child threads) as 'thread'
+                targetId: thread.getThreadId().getValue(),
+                content: threadName,
+                imageUrls: imageUrl ? [imageUrl] : [],
+            });
+            console.log('ThreadCreateUseCase: Sent to moderation queue');
+        } catch (e) {
+            console.error('ThreadCreateUseCase: Failed to send to moderation queue', e);
+            // Non-blocking error
+        }
+
         const threadItem = await this.convertToThreadItem(thread);
 
         return {

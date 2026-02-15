@@ -3,39 +3,55 @@ jest.mock('uuid', () => ({
 }));
 
 import { ThreadCreateUseCase } from '../ThreadCreateUseCase';
-import { IThreadRepository } from '../../../domain/repositories/timeline/IThreadRepository';
-import { IProfileRepository } from '../../../domain/repositories/profile/IProfileRepository';
-import { MessageSendingService } from '../../services/inbox/MessageSendingService';
-import { Profile } from '../../../domain/entities/profile/profile';
-import { Thread } from '../../../domain/entities/timeline/thread';
-import { UserId } from '../../../domain/value-object/users/UserId';
-import { ThreadId } from '../../../domain/value-object/timeline/threadId';
-import { ThreadName } from '../../../domain/value-object/map/threadName';
-
-// Mock Dependencies
-const mockThreadRepository: IThreadRepository = {
-    save: jest.fn(),
-    findById: jest.fn(),
-    delete: jest.fn(),
-    findAll: jest.fn(),
-    findByThreadIds: jest.fn(),
-    findByUserIds: jest.fn(),
-} as any;
-
-const mockProfileRepository: IProfileRepository = {
-    findByUserId: jest.fn(),
-} as any;
-
-const mockMessageSendingService = {
-    sendMessage: jest.fn(),
-} as unknown as MessageSendingService;
+import { IThreadRepository } from '../../../../domain/repositories/timeline/IThreadRepository';
+import { IProfileRepository } from '../../../../domain/repositories/profile/IProfileRepository';
+import { IContentModerationQueue } from '../../../../domain/repositories/queue/IContentModerationQueue';
+import { MessageSendingService } from '../../../services/inbox/MessageSendingService';
+import { Profile } from '../../../../domain/entities/profile/profile';
+import { Thread } from '../../../../domain/entities/timeline/thread';
+import { UserId } from '../../../../domain/value-object/users/UserId';
+import { ThreadId } from '../../../../domain/value-object/timeline/threadId';
+import { ThreadName } from '../../../../domain/value-object/map/threadName';
 
 describe('ThreadCreateUseCase', () => {
+    let mockThreadRepository: jest.Mocked<IThreadRepository>;
+    let mockProfileRepository: jest.Mocked<IProfileRepository>;
+    let mockMessageSendingService: jest.Mocked<MessageSendingService>;
+    let mockContentModerationQueue: jest.Mocked<IContentModerationQueue>;
     let useCase: ThreadCreateUseCase;
     const validUserId = '12345678-1234-4000-8000-123456789012';
 
     beforeEach(() => {
-        useCase = new ThreadCreateUseCase(mockThreadRepository, mockProfileRepository, mockMessageSendingService);
+        mockThreadRepository = {
+            save: jest.fn(),
+            findById: jest.fn(),
+            delete: jest.fn(),
+            findAll: jest.fn(),
+            findByThreadIds: jest.fn(),
+            findByUserIds: jest.fn(),
+            softDelete: jest.fn(),
+            findByOwnerUserId: jest.fn(),
+            findByTimeline: jest.fn(),
+        } as any;
+
+        mockProfileRepository = {
+            findByUserId: jest.fn(),
+        } as any;
+
+        mockMessageSendingService = {
+            sendMessage: jest.fn(),
+        } as any;
+
+        mockContentModerationQueue = {
+            sendMessage: jest.fn(),
+        } as any;
+
+        useCase = new ThreadCreateUseCase(
+            mockThreadRepository,
+            mockProfileRepository,
+            mockMessageSendingService,
+            mockContentModerationQueue,
+        );
         jest.clearAllMocks();
     });
 

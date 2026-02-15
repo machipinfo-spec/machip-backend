@@ -118,4 +118,11 @@ export class DynamoResponseRepository implements IResponseRepository {
             ResponseText.create(item.responseText),
         );
     }
+    async delete(responseId: string): Promise<void> {
+        const response = await this.findById(responseId);
+        if (response) {
+            const deletedResponse = response.delete();
+            await this.save(deletedResponse);
+        }
+    }
 }

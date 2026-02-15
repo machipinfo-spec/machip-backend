@@ -15,12 +15,15 @@ import { InboxNotificationService } from '../../../../application/services/inbox
 import { FirebasePushNotificationService } from '../../../../infrastructure/firebase/notification/FirebasePushNotificationService';
 import { DynamoDeviceTokenRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoDeviceTokenRepository';
 
+import { SqsContentModerationQueue } from '../../../../infrastructure/aws/sqs/SqsContentModerationQueue';
+
 const profileRepository = new DynamoProfileRepository();
 const threadRepository = new DynamoThreadRepository();
 const messageRepository = new DynamoMessageRepository();
 const userMessageRepository = new DynamoUserMessageRepository();
 const messageBroadcastRepository = new DynamoMessageBroadcastRepository();
 const userRepository = new DynamoUserRepository();
+const contentModerationQueue = new SqsContentModerationQueue();
 
 const deviceTokenRepository = new DynamoDeviceTokenRepository();
 const pushNotificationService = new FirebasePushNotificationService(deviceTokenRepository);
@@ -35,7 +38,12 @@ const messageSendingService = new MessageSendingService(
     inboxNotificationService,
     new Logger('MessageSendingService'),
 );
-const threadCreateUseCase = new ThreadCreateUseCase(threadRepository, profileRepository, messageSendingService);
+const threadCreateUseCase = new ThreadCreateUseCase(
+    threadRepository,
+    profileRepository,
+    messageSendingService,
+    contentModerationQueue,
+);
 const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
 
