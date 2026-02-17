@@ -5,12 +5,15 @@ import { IResponseRepository } from '../../../domain/repositories/timeline/IResp
 import { EnhancedDeepSeekApiRepository } from '../../../infrastructure/deep-seek/EnhancedDeepSeekApiRepository';
 import { ContentModerationHistory } from '../../../domain/entities/timeline/contentModerationHistory';
 
+import { MessageSendingService } from '../../services/inbox/MessageSendingService';
+
 export class ContentModerationService {
     constructor(
         private readonly moderationHistoryRepository: IContentModerationHistoryRepository,
         private readonly threadRepository: IThreadRepository,
         private readonly responseRepository: IResponseRepository,
         private readonly aiRepository: EnhancedDeepSeekApiRepository,
+        private readonly messageSendingService: MessageSendingService,
     ) {}
 
     async execute(request: ContentModerationRequest): Promise<void> {
@@ -40,6 +43,23 @@ export class ContentModerationService {
                 await this.threadRepository.softDelete(request.targetId);
             } else if (request.targetType === 'response') {
                 await this.responseRepository.delete(request.targetId);
+            }
+
+            // 4. Notify User
+            if (request.ownerUserId) {
+                try {
+                    await this.messageSendingService.sendSystemMessage(
+                        'コンテンツ削除のお知らせ',
+                        `あなたの投稿は以下の理由により削除されました：\n\n${result.reason}`,
+                        'single',
+                        [request.ownerUserId],
+                    );
+                    console.log('ContentModerationService: Notification sent to user', request.ownerUserId);
+                } catch (e) {
+                    console.error('ContentModerationService: Failed to send notification', e);
+                }
+            } else {
+                console.warn('ContentModerationService: ownerUserId not provided, skipping notification');
             }
         }
     }

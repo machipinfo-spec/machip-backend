@@ -19,6 +19,7 @@ export class MapRepository implements IMapRepository {
             address: dto.address || null,
             deletedAt: dto.deletedAt || null,
             ownerUserId: dto.ownerUserId,
+            createdAt: dto.createdAt,
         };
 
         const { db } = await getDbAndAuth();
@@ -55,6 +56,7 @@ export class MapRepository implements IMapRepository {
             .collection(this.tableName)
             .where('category', '==', category)
             .where('deletedAt', '==', null)
+            .orderBy('createdAt', 'desc')
             .limit(limit)
             .get();
 
@@ -63,7 +65,12 @@ export class MapRepository implements IMapRepository {
 
     async findAll(limit = 50): Promise<PointInfo[]> {
         const { db } = await getDbAndAuth();
-        const snapshot = await db.collection(this.tableName).where('deletedAt', '==', null).limit(limit).get();
+        const snapshot = await db
+            .collection(this.tableName)
+            .where('deletedAt', '==', null)
+            .orderBy('createdAt', 'desc')
+            .limit(limit)
+            .get();
 
         return this.mapDocsToPointInfos(snapshot);
     }
@@ -76,6 +83,7 @@ export class MapRepository implements IMapRepository {
             data.address || null,
             data.deletedAt ? (data.deletedAt.toDate ? data.deletedAt.toDate() : data.deletedAt) : null,
             UserId.fromExisting(data.ownerUserId),
+            data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate() : data.createdAt) : new Date(0), // Provide default if missing
         );
     }
 

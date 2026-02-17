@@ -147,6 +147,7 @@ export class ThreadCreateUseCase {
             await this.contentModerationQueue.sendMessage({
                 targetType: 'thread', // Treats both root threads and replies (child threads) as 'thread'
                 targetId: thread.getThreadId().getValue(),
+                ownerUserId: ownerUserId,
                 content: threadName,
                 imageUrls: imageUrl ? [imageUrl] : [],
             });

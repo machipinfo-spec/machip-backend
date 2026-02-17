@@ -65,6 +65,11 @@ interface CreateThreadRequest {
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
+        console.log('ThreadCreateHandler: Start', {
+            path: event.path,
+            httpMethod: event.httpMethod,
+            bodyLength: event.body?.length,
+        });
         let authId = await handlerUtil.getAuthId(event);
         const user = await getUserUseCase.execute(authId!);
 

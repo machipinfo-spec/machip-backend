@@ -1,6 +1,7 @@
 export interface ContentModerationRequest {
     targetType: 'thread' | 'response';
     targetId: string;
+    ownerUserId: string;
     content: string;
     imageUrls: string[];
 }

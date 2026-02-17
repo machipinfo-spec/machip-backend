@@ -598,6 +598,8 @@ Resources:
                         Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
+                - SQSSendMessagePolicy:
+                      QueueName: !GetAtt ContentModerationQueue.QueueName
             Architectures:
                 - x86_64
             Events:

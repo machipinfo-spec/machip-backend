@@ -33,6 +33,7 @@ export class DynamoMapRepository implements IMapRepository {
             address: dto.address,
             deletedAt: dto.deletedAt ? dto.deletedAt.toISOString() : null,
             ownerUserId: dto.ownerUserId,
+            createdAt: dto.createdAt.toISOString(),
             updatedAt: new Date().toISOString(),
         };
 
@@ -130,6 +131,7 @@ export class DynamoMapRepository implements IMapRepository {
             item.address,
             item.deletedAt ? new Date(item.deletedAt) : null,
             UserId.fromExisting(item.ownerUserId),
+            item.createdAt ? new Date(item.createdAt) : new Date(0),
         );
     }
 }

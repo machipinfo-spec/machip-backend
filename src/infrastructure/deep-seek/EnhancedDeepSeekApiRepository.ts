@@ -83,7 +83,7 @@ export class EnhancedDeepSeekApiRepository implements IAiRepository {
 結果は以下のJSON形式で返してください：
 {
   "isViolation": boolean,
-  "reason": "string (短い説明)",
+  "reason": "string (違反理由を日本語で簡潔に説明してください。ユーザーへの通知に使用します)",
   "category": "string (任意のカテゴリ)"
 }
 JSONのみを返してください。
