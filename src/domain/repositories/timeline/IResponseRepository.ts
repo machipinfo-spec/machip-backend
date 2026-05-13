@@ -5,4 +5,5 @@ export interface IResponseRepository {
     findById(responseId: string): Promise<Response | null>;
     findByParentId(parentId: string, limit?: number): Promise<Response[]>;
     findByOwnerUserId(ownerUserId: string, limit?: number): Promise<Response[]>;
+    delete(responseId: string): Promise<void>;
 }

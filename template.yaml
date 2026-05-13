@@ -47,6 +47,8 @@ Globals:
                 REACTION_TABLE_NAME: !Ref ReactionsTable
                 MESSAGE_TABLE_NAME: !Ref MessagesTable
                 BROADCAST_TABLE_NAME: !Ref MessageBroadcastsTable
+                CONTENT_MODERATION_HISTORY_TABLE_NAME: !Ref ContentModerationHistories
+                CONTENT_MODERATION_QUEUE_URL: !Ref ContentModerationQueue
 Resources:
     Tetra:
         Type: AWS::Serverless::Api
@@ -596,6 +598,8 @@ Resources:
                         Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
                 - S3CrudPolicy:
                       BucketName: !Ref ImageBucket
+                - SQSSendMessagePolicy:
+                      QueueName: !GetAtt ContentModerationQueue.QueueName
             Architectures:
                 - x86_64
             Events:
@@ -1487,6 +1491,67 @@ Resources:
                   Projection:
                       ProjectionType: ALL
             BillingMode: PAY_PER_REQUEST
+
+    # ============================
+    #  Content Moderation
+    # ============================
+    ContentModerationHistories:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: !If [IsStg, 'tetra-content-moderation-history-stg', 'tetra-content-moderation-history-poc']
+            AttributeDefinitions:
+                - AttributeName: id
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: id
+                  KeyType: HASH
+            BillingMode: PAY_PER_REQUEST
+
+    ContentModerationQueue:
+        Type: AWS::SQS::Queue
+        Properties:
+            QueueName: !If [IsStg, 'tetra-content-moderation-queue-stg', 'tetra-content-moderation-queue-poc']
+            VisibilityTimeout: 60
+
+    ContentModerationFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/sqs/contentModeration/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/deepseek/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
+            Architectures:
+                - x86_64
+            Events:
+                SQSQueueTrigger:
+                    Type: SQS
+                    Properties:
+                        Queue: !GetAtt ContentModerationQueue.Arn
+                        BatchSize: 10
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
 
 Outputs:
     TetraApiEndpoint:

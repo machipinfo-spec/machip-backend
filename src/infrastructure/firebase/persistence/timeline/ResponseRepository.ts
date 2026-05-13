@@ -24,6 +24,13 @@ export class ResponseRepository implements IResponseRepository {
         await db.collection(this.tableName).doc(dto.id).set(record);
     }
 
+    async delete(responseId: string): Promise<void> {
+        const { db } = await getDbAndAuth();
+        await db.collection(this.tableName).doc(responseId).update({
+            deleatedAt: new Date(),
+        });
+    }
+
     async findById(responseId: string): Promise<Response | null> {
         const { db } = await getDbAndAuth();
         const docRef = await db.collection(this.tableName).doc(responseId).get();
@@ -70,7 +77,7 @@ export class ResponseRepository implements IResponseRepository {
             data.createdAt.toDate ? data.createdAt.toDate() : data.createdAt,
             data.deleatedAt ? (data.deleatedAt.toDate ? data.deleatedAt.toDate() : data.deleatedAt) : null,
             UserId.fromExisting(data.ownerUserId),
-            ResponseText.create(data.responseText)
+            ResponseText.create(data.responseText),
         );
     }
 

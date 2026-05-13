@@ -23,7 +23,7 @@ describe('PointInfo Entity', () => {
             expect(point).toBeInstanceOf(PointInfo);
             expect(point.getId().getValue()).toBe(validId);
             expect(point.getGeoLocation().getLat()).toBe(35.6895);
-            expect(point.getOwnerUserId().equals(userId)).toBe(true);
+            expect(point.getCreatedAt()).toBeInstanceOf(Date);
         });
     });
 
@@ -41,6 +41,7 @@ describe('PointInfo Entity', () => {
             expect(dto.lng).toBe(139.6917);
             expect(dto.category).toBe('chat');
             expect(dto.ownerUserId).toBe(validUserId);
+            expect(dto.createdAt).toBeInstanceOf(Date);
         });
     });
 
@@ -50,11 +51,13 @@ describe('PointInfo Entity', () => {
             const geoLocation = GeoLocation.create(35.6895, 139.6917);
             const category = Category.create('event');
             const userId = new UserId(validUserId);
+            const createdAt = new Date('2023-01-01T00:00:00Z');
 
-            const point = PointInfo.fromExisting(id, geoLocation, category, 'Osaka', null, userId);
+            const point = PointInfo.fromExisting(id, geoLocation, category, 'Osaka', null, userId, createdAt);
 
             expect(point.getId().equals(id)).toBe(true);
             expect(point.getAddress()).toBe('Osaka');
+            expect(point.getCreatedAt()).toEqual(createdAt);
         });
     });
 });

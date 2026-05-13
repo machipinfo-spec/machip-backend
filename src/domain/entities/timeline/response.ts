@@ -15,19 +15,8 @@ export class Response {
         Object.freeze(this);
     }
 
-    public static create(
-        parentId: ThreadId | ResponseId,
-        ownerUserId: UserId,
-        responseText: ResponseText,
-    ): Response {
-        return new Response(
-            ResponseId.create(),
-            parentId,
-            new Date(),
-            null,
-            ownerUserId,
-            responseText
-        );
+    public static create(parentId: ThreadId | ResponseId, ownerUserId: UserId, responseText: ResponseText): Response {
+        return new Response(ResponseId.create(), parentId, new Date(), null, ownerUserId, responseText);
     }
 
     public static fromExisting(
@@ -39,6 +28,10 @@ export class Response {
         responseText: ResponseText,
     ): Response {
         return new Response(id, parentId, createdAt, deleatedAt, ownerUserId, responseText);
+    }
+
+    public delete(): Response {
+        return new Response(this.id, this.parentId, this.createdAt, new Date(), this.ownerUserId, this.responseText);
     }
 
     public toPrimitives(): ResponseDTO {

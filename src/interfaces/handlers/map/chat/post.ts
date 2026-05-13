@@ -31,6 +31,10 @@ const deviceTokenRepository = new DynamoDeviceTokenRepository();
 const pushNotificationService = new FirebasePushNotificationService(deviceTokenRepository);
 const inboxNotificationService = new InboxNotificationService(pushNotificationService);
 
+import { SqsContentModerationQueue } from '../../../../infrastructure/aws/sqs/SqsContentModerationQueue';
+
+const contentModerationQueue = new SqsContentModerationQueue();
+
 const messageSendingService = new MessageSendingService(
     profileRepository,
     messageRepository,
@@ -40,7 +44,12 @@ const messageSendingService = new MessageSendingService(
     inboxNotificationService,
     new Logger('MessageSendingService'),
 );
-const threadCreateUseCase = new ThreadCreateUseCase(threadRepository, profileRepository, messageSendingService);
+const threadCreateUseCase = new ThreadCreateUseCase(
+    threadRepository,
+    profileRepository,
+    messageSendingService,
+    contentModerationQueue,
+);
 const getUserUseCase = new GetUserUseCase(userRepository);
 const handlerUtil = new HandlerUtil();
 const useCase = new CreateChatPointUseCase(mapRepository, reverseGeocodingRepository, messageSendingService);

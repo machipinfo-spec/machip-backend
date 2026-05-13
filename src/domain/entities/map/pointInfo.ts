@@ -10,7 +10,8 @@ export class PointInfo {
         private readonly category: Category,
         private readonly address: string | null,
         private readonly deletedAt: Date | null,
-        private readonly ownerUserId: UserId, // New field
+        private readonly ownerUserId: UserId,
+        private readonly createdAt: Date, // New field
     ) {
         Object.freeze(this);
     }
@@ -20,7 +21,7 @@ export class PointInfo {
         category: Category,
         address: string | null,
         deletedAt: Date | null,
-        ownerUserId: UserId, // New argument
+        ownerUserId: UserId,
         pointInfoId?: PointInfoId,
     ): PointInfo {
         return new PointInfo(
@@ -30,6 +31,7 @@ export class PointInfo {
             address,
             deletedAt,
             ownerUserId,
+            new Date(),
         );
     }
 
@@ -39,9 +41,10 @@ export class PointInfo {
         category: Category,
         address: string | null,
         deletedAt: Date | null,
-        ownerUserId: UserId, // New argument
+        ownerUserId: UserId,
+        createdAt: Date,
     ): PointInfo {
-        return new PointInfo(id, geoLocation, category, address, deletedAt, ownerUserId);
+        return new PointInfo(id, geoLocation, category, address, deletedAt, ownerUserId, createdAt);
     }
 
     public getId(): PointInfoId {
@@ -64,8 +67,20 @@ export class PointInfo {
         return this.ownerUserId;
     }
 
+    public getCreatedAt(): Date {
+        return this.createdAt;
+    }
+
     public markAsRead(): PointInfo {
-        return new PointInfo(this.id, this.geoLocation, this.category, this.address, this.deletedAt, this.ownerUserId);
+        return new PointInfo(
+            this.id,
+            this.geoLocation,
+            this.category,
+            this.address,
+            this.deletedAt,
+            this.ownerUserId,
+            this.createdAt,
+        );
     }
 
     public toPrimitives(): PointInfoDTO {
@@ -77,6 +92,7 @@ export class PointInfo {
             address: this.address,
             deletedAt: this.deletedAt,
             ownerUserId: this.ownerUserId.getValue(),
+            createdAt: this.createdAt,
         };
     }
 }
@@ -89,4 +105,5 @@ export interface PointInfoDTO {
     address: string | null;
     deletedAt: Date | null;
     ownerUserId: string;
+    createdAt: Date;
 }
