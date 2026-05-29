@@ -29,7 +29,8 @@ interface GetPointInfoListResponse {
     threadName: string;
     category: string;
     imageUrl: string | null;
-    // selectDate removed
+    iconEmoji: string | null;
+    iconColor: string | null;
 }
 
 /**

@@ -32,6 +32,8 @@ export interface EventContent {
 
 export interface ChatContent {
     imageUrl: string | null;
+    detail: string | null;
+    url: string | null;
 }
 
 export interface TimelineThreadItemEvent extends TimelineThreadItemCommon {
@@ -40,7 +42,7 @@ export interface TimelineThreadItemEvent extends TimelineThreadItemCommon {
 }
 
 export interface TimelineThreadItemChat extends TimelineThreadItemCommon {
-    category: 'chat';
+    category: 'chat' | string;
     categoryContent: ChatContent;
 }
 
@@ -115,9 +117,11 @@ export class TimelineReadUseCase {
 
                 return {
                     ...common,
-                    category: 'chat',
+                    category: primitives.category || 'chat',
                     categoryContent: {
                         imageUrl: primitives.imageUrl,
+                        detail: primitives.detail,
+                        url: primitives.url,
                     },
                 };
             }),
@@ -195,9 +199,11 @@ export class TimelineReadByUserUseCase {
 
                 return {
                     ...common,
-                    category: 'chat',
+                    category: primitives.category || 'chat',
                     categoryContent: {
                         imageUrl: primitives.imageUrl,
+                        detail: primitives.detail,
+                        url: primitives.url,
                     },
                 };
             }),

@@ -14,6 +14,8 @@ export interface CreateChatPointRequest {
     threadName: string;
     imageUrl?: string | null;
     userId: string;
+    iconEmoji?: string | null;
+    iconColor?: string | null;
 }
 
 export interface CreateChatPointResponse {
@@ -56,6 +58,8 @@ export class CreateChatPointUseCase {
                 null, // deletedAt
                 UserId.fromExisting(request.userId), // ownerUserId
                 pointInfoId,
+                request.iconEmoji,
+                request.iconColor,
             );
 
             await this.mapRepository.save(pointInfo);

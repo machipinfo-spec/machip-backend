@@ -38,6 +38,9 @@ export class DynamoThreadRepository implements IThreadRepository {
         if (dto.parentThreadId) item.parentThreadId = dto.parentThreadId;
         if (dto.mapPointInfoId) item.mapPointInfoId = dto.mapPointInfoId;
         if (dto.imageUrl) item.imageUrl = dto.imageUrl;
+        if (dto.category) item.category = dto.category;
+        if (dto.url) item.url = dto.url;
+        if (dto.detail) item.detail = dto.detail;
 
         await this.client.send(
             new PutCommand({
@@ -217,6 +220,9 @@ export class DynamoThreadRepository implements IThreadRepository {
             (item.childThreadIds || []).map((id: string) => ThreadId.fromExisting(id)),
             item.mapPointInfoId ? PointInfoId.fromExisting(item.mapPointInfoId) : null,
             item.imageUrl || null,
+            item.category || null,
+            item.url || null,
+            item.detail || null,
         );
     }
 }

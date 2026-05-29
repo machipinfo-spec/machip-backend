@@ -103,6 +103,8 @@ export class GetPointInfoListUseCase {
                 imageUrl: imageUrl,
                 startDate: startDate, // Added explicit field if needed by frontend
                 endDate: endDate, // Added explicit field if needed by frontend
+                iconEmoji: point.getIconEmoji(),
+                iconColor: point.getIconColor(),
             });
         }
 
@@ -125,4 +127,6 @@ export interface GetPointInfoListUseCaseResponse {
     imageUrl: string | null;
     startDate: Date | null;
     endDate: Date | null;
+    iconEmoji: string | null;
+    iconColor: string | null;
 }

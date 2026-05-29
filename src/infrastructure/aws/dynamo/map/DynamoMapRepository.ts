@@ -25,7 +25,7 @@ export class DynamoMapRepository implements IMapRepository {
 
     async save(pointInfo: PointInfo): Promise<void> {
         const dto = pointInfo.toPrimitives();
-        const item = {
+        const item: any = {
             id: dto.id,
             lat: dto.lat,
             lng: dto.lng,
@@ -36,6 +36,9 @@ export class DynamoMapRepository implements IMapRepository {
             createdAt: dto.createdAt.toISOString(),
             updatedAt: new Date().toISOString(),
         };
+
+        if (dto.iconEmoji) item.iconEmoji = dto.iconEmoji;
+        if (dto.iconColor) item.iconColor = dto.iconColor;
 
         await this.client.send(
             new PutCommand({
@@ -132,6 +135,8 @@ export class DynamoMapRepository implements IMapRepository {
             item.deletedAt ? new Date(item.deletedAt) : null,
             UserId.fromExisting(item.ownerUserId),
             item.createdAt ? new Date(item.createdAt) : new Date(0),
+            item.iconEmoji || null,
+            item.iconColor || null,
         );
     }
 }

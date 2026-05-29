@@ -44,6 +44,8 @@ describe('GetPointInfoListUseCase', () => {
             getId: () => ({ getValue: () => 'chat-point' }),
             getGeoLocation: () => ({ getLat: () => 35, getLng: () => 139 }),
             getCategory: () => ({ getValue: () => 'chat' }),
+            getIconEmoji: () => '📍',
+            getIconColor: () => '#10B981',
         } as unknown as PointInfo;
 
         // Mock PointInfo (Event)
@@ -51,6 +53,8 @@ describe('GetPointInfoListUseCase', () => {
             getId: () => ({ getValue: () => 'event-point' }),
             getGeoLocation: () => ({ getLat: () => 36, getLng: () => 140 }),
             getCategory: () => ({ getValue: () => 'event' }),
+            getIconEmoji: () => '🔥',
+            getIconColor: () => '#F97316',
         } as unknown as PointInfo;
 
         (mockMapRepository.findAll as jest.Mock).mockResolvedValue([chatPoint, eventPoint]);

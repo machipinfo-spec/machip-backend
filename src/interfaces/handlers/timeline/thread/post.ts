@@ -58,6 +58,9 @@ interface CreateThreadRequest {
     threadName: string;
     parentThreadId?: string;
     imageUrl?: string;
+    category?: string;
+    url?: string;
+    detail?: string;
 }
 
 /**
@@ -109,9 +112,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const threadName = requestBody.threadName;
-        const parentThreadId = requestBody.parentThreadId;
-        const imageUrl = requestBody.imageUrl;
+        const { threadName, parentThreadId, imageUrl, category, url, detail } = requestBody;
 
         if (!threadName) {
             return {
@@ -131,6 +132,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             null, // pointInfoId
             imageUrl || null,
             parentThreadId || null,
+            category || null,
+            url || null,
+            detail || null,
         );
 
         if (threadResponse.error || !threadResponse.thread) {
