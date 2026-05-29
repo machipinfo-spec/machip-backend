@@ -12,6 +12,8 @@ export class PointInfo {
         private readonly deletedAt: Date | null,
         private readonly ownerUserId: UserId,
         private readonly createdAt: Date, // New field
+        private readonly iconEmoji: string | null,
+        private readonly iconColor: string | null,
     ) {
         Object.freeze(this);
     }
@@ -23,7 +25,11 @@ export class PointInfo {
         deletedAt: Date | null,
         ownerUserId: UserId,
         pointInfoId?: PointInfoId,
+        iconEmoji?: string | null,
+        iconColor?: string | null,
     ): PointInfo {
+        const emojiVal = iconEmoji || (category.getValue() === 'event' ? '🔥' : '📍');
+        const colorVal = iconColor || (category.getValue() === 'event' ? '#F97316' : '#10B981');
         return new PointInfo(
             pointInfoId || PointInfoId.create(),
             geoLocation,
@@ -32,6 +38,8 @@ export class PointInfo {
             deletedAt,
             ownerUserId,
             new Date(),
+            emojiVal,
+            colorVal,
         );
     }
 
@@ -43,8 +51,10 @@ export class PointInfo {
         deletedAt: Date | null,
         ownerUserId: UserId,
         createdAt: Date,
+        iconEmoji: string | null = null,
+        iconColor: string | null = null,
     ): PointInfo {
-        return new PointInfo(id, geoLocation, category, address, deletedAt, ownerUserId, createdAt);
+        return new PointInfo(id, geoLocation, category, address, deletedAt, ownerUserId, createdAt, iconEmoji, iconColor);
     }
 
     public getId(): PointInfoId {
@@ -71,6 +81,14 @@ export class PointInfo {
         return this.createdAt;
     }
 
+    public getIconEmoji(): string | null {
+        return this.iconEmoji;
+    }
+
+    public getIconColor(): string | null {
+        return this.iconColor;
+    }
+
     public markAsRead(): PointInfo {
         return new PointInfo(
             this.id,
@@ -80,6 +98,8 @@ export class PointInfo {
             this.deletedAt,
             this.ownerUserId,
             this.createdAt,
+            this.iconEmoji,
+            this.iconColor,
         );
     }
 
@@ -93,6 +113,8 @@ export class PointInfo {
             deletedAt: this.deletedAt,
             ownerUserId: this.ownerUserId.getValue(),
             createdAt: this.createdAt,
+            iconEmoji: this.iconEmoji,
+            iconColor: this.iconColor,
         };
     }
 }
@@ -106,4 +128,6 @@ export interface PointInfoDTO {
     deletedAt: Date | null;
     ownerUserId: string;
     createdAt: Date;
+    iconEmoji: string | null;
+    iconColor: string | null;
 }

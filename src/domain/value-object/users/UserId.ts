@@ -25,6 +25,7 @@ export class UserId extends ValueObject<string> {
 
     // システムユーザーID (固定値: UUID v4形式)
     public static readonly SYSTEM_ID = new UserId('a785ce49-0d19-49f0-a933-5b1a77ec7066');
+    public static readonly AI_BOT = new UserId('0ef98563-984d-470b-a9f9-d34700034e72');
 
     public isSystem(): boolean {
         return this.equals(UserId.SYSTEM_ID);

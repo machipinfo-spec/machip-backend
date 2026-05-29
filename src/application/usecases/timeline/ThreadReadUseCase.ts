@@ -31,6 +31,8 @@ export interface EventContent {
 
 export interface ChatContent {
     imageUrl: string | null;
+    detail: string | null;
+    url: string | null;
 }
 
 export interface ThreadItemEvent extends ThreadItemCommon {
@@ -39,7 +41,7 @@ export interface ThreadItemEvent extends ThreadItemCommon {
 }
 
 export interface ThreadItemChat extends ThreadItemCommon {
-    category: 'chat';
+    category: 'chat' | string;
     categoryContent: ChatContent;
 }
 
@@ -96,14 +98,7 @@ export class ThreadReadUseCase {
                             endDate: pointEvent.getEndDate(),
                             detail: pointEvent.getDetail(),
                             url: pointEvent.getUrl(),
-                            imageUrl: pointEvent.getImageUrl(), // Prefer event image if available, else null? Or should we fallback to thread image?
-                            // The user asked to move imageUrl. Assuming PointEvent has imageUrl.
-                            // If PointEvent.imageUrl is null, maybe fallback to Thread.imageUrl?
-                            // Logic: PointEvent usually has the specific image. Thread.imageUrl was a copy or fallback.
-                            // Let's use pointEvent.getImageUrl().
-                            // Wait, Thread entity had imageUrl too.
-                            // If it's an event, the image usually comes from the event data.
-                            // Let's use pointEvent.getImageUrl().
+                            imageUrl: pointEvent.getImageUrl(),
                         },
                     };
                 }
@@ -115,9 +110,11 @@ export class ThreadReadUseCase {
         // Chat or fallback
         return {
             ...common,
-            category: 'chat',
+            category: p.category || 'chat',
             categoryContent: {
                 imageUrl: p.imageUrl,
+                detail: p.detail,
+                url: p.url,
             },
         };
     }

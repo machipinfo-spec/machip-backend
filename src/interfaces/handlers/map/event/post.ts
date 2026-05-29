@@ -102,18 +102,13 @@ interface CreateEventPointRequest {
     // I will rename `imageUrl` in request interface to `imageBase64` locally if that's what comes in, BUT passed as `imageUrl` to UseCase?
     // Actually, looking at `handlers/map/post.ts` (step 303): `interface CreatePointInfoRequest { ... imageUrl?: string; ... }`
     // And `const { ... imageUrl ... } = requestBody;`.
-    // So the previous code expected `imageUrl`.
-    // My new swagger in step 381 changed `POST /map/event` to use `imageBase64`.
-    // This might be a discrepancy.
-    // I will update the code to expect `imageBase64` if I want to match my swagger, OR stick to `imageUrl` and fix Swagger.
-    // Creating "Event" points with "imageBase64" sounds like we expect an upload.
-    // BUT since I am not implementing upload logic here, I will assume the input is `imageUrl`. I will use `imageUrl` in the code, and maybe update Swagger later if needed, or assume "imageBase64" is just a label for the same string data (a URL or base64 string).
-    // Let's use `imageUrl` to match the other parts of the system.
     imageUrl?: string;
     startDate: string;
     endDate: string;
     detail?: string;
     url?: string;
+    iconEmoji?: string;
+    iconColor?: string;
 }
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -152,7 +147,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const { lat, lng, threadName, startDate, endDate, detail, url, imageUrl } = requestBody;
+        const { lat, lng, threadName, startDate, endDate, detail, url, imageUrl, iconEmoji, iconColor } = requestBody;
 
         if (lat === undefined || lng === undefined || !threadName || !startDate || !endDate) {
             return {
@@ -164,6 +159,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 }),
             };
         }
+
+        const finalEmoji = iconEmoji || '🔥';
+        const finalColor = iconColor || '#F97316';
 
         const start = new Date(startDate);
         const end = new Date(endDate);
@@ -178,6 +176,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             url: url || null,
             imageUrl: imageUrl || null,
             userId: user.userId.getValue(),
+            iconEmoji: finalEmoji,
+            iconColor: finalColor,
         });
 
         if (eventPointResponse.error || !eventPointResponse.pointInfo || !eventPointResponse.pointEvent) {
@@ -222,6 +222,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             endDate: pointEvent.getEndDate().toISOString(),
             detail: pointEvent.getDetail(),
             url: pointEvent.getUrl(),
+            iconEmoji: point.getIconEmoji(),
+            iconColor: point.getIconColor(),
         };
 
         return {

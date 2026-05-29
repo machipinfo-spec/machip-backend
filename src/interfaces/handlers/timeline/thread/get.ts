@@ -1,11 +1,11 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoThreadRepository } from '../../../../infrastructure/aws/dynamo/timeline/DynamoThreadRepository';
 import { ThreadReadUseCase } from '../../../../application/usecases/timeline/ThreadReadUseCase';
+import { TimelineReadByUserUseCase } from '../../../../application/usecases/timeline/TimelineReadUseCase';
 import { GetUserUseCase } from '../../../../application/usecases/user/GetUserUseCase';
 import { DynamoUserRepository } from '../../../../infrastructure/aws/dynamo/user/DynamoUserRepository';
 import { HandlerUtil } from '../../util';
 import { DynamoProfileRepository } from '../../../../infrastructure/aws/dynamo/profile/DynamoProfileRepository';
-
 import { DynamoPointEventRepository } from '../../../../infrastructure/aws/dynamo/map/DynamoPointEventRepository';
 
 const userRepository = new DynamoUserRepository();
@@ -14,6 +14,7 @@ const threadRepository = new DynamoThreadRepository();
 const profileRepository = new DynamoProfileRepository();
 const pointEventRepository = new DynamoPointEventRepository();
 const threadReadUseCase = new ThreadReadUseCase(threadRepository, profileRepository, pointEventRepository);
+const timelineReadByUserUseCase = new TimelineReadByUserUseCase(threadRepository, profileRepository, pointEventRepository);
 const handlerUtil = new HandlerUtil();
 
 const corsHeaders = {
@@ -71,16 +72,42 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // ユーザーのスレッド一覧取得
         if (ownerUserId) {
-            const threads = await threadRepository.findByOwnerUserId(
+            if (!authId) {
+                return {
+                    statusCode: 401,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ message: 'Unauthorized: Missing authentication token' }),
+                };
+            }
+
+            const result = await timelineReadByUserUseCase.execute(
                 ownerUserId,
                 limit ? parseInt(limit, 10) : undefined,
                 offset ? parseInt(offset, 10) : undefined,
             );
 
-            const responseBody = threads.map((thread) => ({
-                ...thread.toPrimitives(),
-                createdAt: thread.toPrimitives().createdAt.toISOString(),
-            }));
+            const responseBody = result.threads.map((t) => {
+                const isEvent = t.category === 'event';
+                return {
+                    threadId: t.threadId,
+                    threadName: t.threadName,
+                    createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : new Date(t.createdAt).toISOString(),
+                    ownerUserId: t.ownerUserId,
+                    ownerName: t.ownerUserProfile.userName,
+                    ownerAvatar: t.ownerUserProfile.imageUrl,
+                    category: t.category,
+                    categoryContent: isEvent ? {
+                        url: (t.categoryContent as any).url,
+                        imageUrl: (t.categoryContent as any).imageUrl,
+                        detail: (t.categoryContent as any).detail,
+                    } : {
+                        imageUrl: (t.categoryContent as any).imageUrl,
+                        url: (t.categoryContent as any).url,
+                        detail: (t.categoryContent as any).detail,
+                    },
+                    replyCount: t.childThreadCount,
+                };
+            });
 
             return {
                 statusCode: 200,

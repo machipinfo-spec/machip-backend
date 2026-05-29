@@ -32,6 +32,9 @@ export interface ThreadItem {
     mapPointInfoId: string | null;
     imageUrl: string | null;
     childThreadCount: number;
+    category: string | null;
+    url: string | null;
+    detail: string | null;
 }
 
 export interface ThreadCreateResponse {
@@ -71,6 +74,9 @@ export class ThreadCreateUseCase {
             mapPointInfoId: p.mapPointInfoId,
             imageUrl: p.imageUrl,
             childThreadCount: p.childThreadIds.length,
+            category: p.category,
+            url: p.url,
+            detail: p.detail,
         };
     }
 
@@ -80,6 +86,9 @@ export class ThreadCreateUseCase {
         pointInfoId: string | null,
         imageUrl: string | null,
         parentThreadId: string | null,
+        category: string | null = null,
+        url: string | null = null,
+        detail: string | null = null,
     ): Promise<ThreadCreateResponse> {
         console.log('ThreadCreateUseCase: execute called', {
             threadName,
@@ -87,6 +96,9 @@ export class ThreadCreateUseCase {
             pointInfoId,
             imageUrl,
             parentThreadId,
+            category,
+            url,
+            detail,
         });
 
         const parentThread = parentThreadId ? ThreadId.fromExisting(parentThreadId) : null;
@@ -99,6 +111,9 @@ export class ThreadCreateUseCase {
                 imageUrl,
                 parentThread,
                 null,
+                category,
+                url,
+                detail,
             );
         } else {
             thread = Thread.createFromMapPoint(

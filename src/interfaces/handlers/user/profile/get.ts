@@ -22,6 +22,7 @@ const corsHeaders = {
 
 interface GetProfileResponse {
     profileId: string;
+    userId: string;
     userName: string;
     imageUrl: string;
     introduction: string;
@@ -79,6 +80,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         const responseBody: GetProfileResponse = {
             profileId: response.profile.profileId.getValue(),
+            userId: response.profile.userId.getValue(),
             userName: response.profile.userName.getValue(),
             imageUrl: response.profile.imageUrl.getValue(),
             introduction: response.profile.introduction.getValue(),

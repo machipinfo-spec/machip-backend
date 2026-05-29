@@ -66,6 +66,12 @@ components:
         url:
           type: string
           nullable: true
+        iconEmoji:
+          type: string
+          nullable: true
+        iconColor:
+          type: string
+          nullable: true
 
     EventPoint:
       type: object
@@ -99,6 +105,12 @@ components:
         url:
           type: string
           nullable: true
+        iconEmoji:
+          type: string
+          nullable: true
+        iconColor:
+          type: string
+          nullable: true
 
     ChatPoint:
       type: object
@@ -116,6 +128,12 @@ components:
         threadId:
           type: string
         imageUrl:
+          type: string
+          nullable: true
+        iconEmoji:
+          type: string
+          nullable: true
+        iconColor:
           type: string
           nullable: true
 
@@ -147,6 +165,15 @@ components:
           items:
             type: string
         imageUrl:
+          type: string
+          nullable: true
+        category:
+          type: string
+          nullable: true
+        url:
+          type: string
+          nullable: true
+        detail:
           type: string
           nullable: true
 
@@ -424,6 +451,177 @@ paths:
         '404':
           description: Profile not found
 
+  /user/bookmark:
+    get:
+      summary: Get Bookmarked Threads
+      description: 自分がブックマークしたスレッドの一覧を取得します。
+      security:
+        - CognitoAuthorizer: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: ブックマークされたスレッドの一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  threads:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Thread'
+        '401':
+          description: 認証エラー
+
+    post:
+      summary: Bookmark a Thread
+      description: 指定したスレッドをブックマークに登録します。
+      security:
+        - CognitoAuthorizer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [threadId]
+              properties:
+                threadId:
+                  type: string
+      responses:
+        '200':
+          description: ブックマーク登録成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: 不正なリクエスト (UUIDフォーマットエラーなど)
+        '401':
+          description: 認証エラー
+
+    delete:
+      summary: Unbookmark a Thread
+      description: 指定したスレッドのブックマークを解除します。
+      security:
+        - CognitoAuthorizer: []
+      parameters:
+        - in: query
+          name: threadId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ブックマーク解除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: 不正なリクエスト
+        '401':
+          description: 認証エラー
+
+  /user/follow:
+    post:
+      summary: Follow a User
+      description: 指定したユーザーをフォローします。自分自身をフォローすることはできません。
+      security:
+        - CognitoAuthorizer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetUserId]
+              properties:
+                targetUserId:
+                  type: string
+      responses:
+        '200':
+          description: フォロー成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: 不正なリクエスト (自分自身へのフォローなど)
+        '401':
+          description: 認証エラー
+
+    delete:
+      summary: Unfollow a User
+      description: 指定したユーザーのフォローを解除します。
+      security:
+        - CognitoAuthorizer: []
+      parameters:
+        - in: query
+          name: targetUserId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: フォロー解除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: 不正なリクエスト
+        '401':
+          description: 認証エラー
+
+  /user/following:
+    get:
+      summary: Get Following Users Profiles
+      description: 自分がフォローしているユーザーのプロフィール一覧を取得します。
+      security:
+        - CognitoAuthorizer: []
+      responses:
+        '200':
+          description: フォロー中ユーザーのプロフィール一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Profile'
+        '401':
+          description: 認証エラー
+
   /map:
     get:
       summary: Get Point Info List
@@ -484,6 +682,10 @@ paths:
                   type: string
                 url:
                   type: string
+                iconEmoji:
+                  type: string
+                iconColor:
+                  type: string
       responses:
         '201':
           description: Event Point created
@@ -512,6 +714,10 @@ paths:
                 threadName:
                   type: string
                 imageBase64:
+                  type: string
+                iconEmoji:
+                  type: string
+                iconColor:
                   type: string
       responses:
         '201':
@@ -547,7 +753,9 @@ paths:
   /timeline/thread:
     get:
       summary: Get Thread or Thread List by Owner
-      security: []
+      description: 指定したスレッド、もしくは特定ユーザー（ownerUserId）が投稿したスレッド一覧を取得します。※ownerUserIdを指定して特定ユーザーの投稿一覧を取得する場合、CognitoAuthorizerによる認証（Authorizationヘッダー）が必須となります。
+      security:
+        - CognitoAuthorizer: []
       parameters:
         - in: query
           name: threadId
@@ -598,6 +806,12 @@ paths:
                 parentThreadId:
                   type: string
                 imageBase64:
+                  type: string
+                category:
+                  type: string
+                url:
+                  type: string
+                detail:
                   type: string
       responses:
         '201':

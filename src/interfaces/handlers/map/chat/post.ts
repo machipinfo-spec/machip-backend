@@ -66,6 +66,8 @@ interface CreateChatPointRequest {
     lng: number;
     threadName: string;
     imageUrl?: string;
+    iconEmoji?: string;
+    iconColor?: string;
 }
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -104,7 +106,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const { lat, lng, threadName, imageUrl } = requestBody;
+        const { lat, lng, threadName, imageUrl, iconEmoji, iconColor } = requestBody;
 
         if (lat === undefined || lng === undefined || !threadName) {
             return {
@@ -117,12 +119,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
+        const finalEmoji = iconEmoji || '📍';
+        const finalColor = iconColor || '#10B981';
+
         const response = await useCase.execute({
             lat,
             lng,
             threadName,
             imageUrl: imageUrl || null,
             userId: user.userId.getValue(),
+            iconEmoji: finalEmoji,
+            iconColor: finalColor,
         });
 
         if (response.error || !response.pointInfo) {
@@ -166,6 +173,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             category: 'chat', // Fixed
             threadId: threadCreateResponse.thread.threadId,
             imageUrl: threadCreateResponse.thread.imageUrl || null,
+            iconEmoji: point.getIconEmoji(),
+            iconColor: point.getIconColor(),
         };
 
         return {

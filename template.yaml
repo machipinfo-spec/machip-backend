@@ -636,6 +636,172 @@ Resources:
                 EntryPoints:
                     - index.ts
 
+    # bookmark
+    UserBookmarkFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/user/bookmark/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
+            Architectures:
+                - x86_64
+            Events:
+                GetBookmarks:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user/bookmark
+                        Method: GET
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+                CreateBookmark:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user/bookmark
+                        Method: POST
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+                DeleteBookmark:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user/bookmark
+                        Method: DELETE
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
+
+    # follow
+    UserFollowFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/user/follow/
+            Handler: index.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 30
+            MemorySize: 512
+            Policies:
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
+            Architectures:
+                - x86_64
+            Events:
+                GetFollowing:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user/following
+                        Method: GET
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+                CreateFollow:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user/follow
+                        Method: POST
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+                DeleteFollow:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /user/follow
+                        Method: DELETE
+                        Auth:
+                            Authorizer: CognitoAuthorizer
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - index.ts
+
+    # news
+    NewsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/interfaces/handlers/news/
+            Handler: post.lambdaHandler
+            Runtime: nodejs22.x
+            Timeout: 60
+            MemorySize: 512
+            Policies:
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/firebase/*'
+                - SSMParameterWithSlashPrefixReadPolicy:
+                      ParameterName: '/tetra/deepseek/*'
+                - Statement:
+                      - Effect: Allow
+                        Action:
+                            - dynamodb:BatchGetItem
+                            - dynamodb:BatchWriteItem
+                            - dynamodb:PutItem
+                            - dynamodb:DeleteItem
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                            - dynamodb:Query
+                            - dynamodb:UpdateItem
+                        Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*'
+                - S3CrudPolicy:
+                      BucketName: !Ref ImageBucket
+                - SQSSendMessagePolicy:
+                      QueueName: !GetAtt ContentModerationQueue.QueueName
+            Architectures:
+                - x86_64
+            Events:
+                CreateNews:
+                    Type: Api
+                    Properties:
+                        RestApiId: !Ref Tetra
+                        Path: /news
+                        Method: POST
+                        Auth:
+                            Authorizer: NONE
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - post.ts
+
     # timelineQuery
     TimelineQueryFunction:
         Type: AWS::Serverless::Function
@@ -1490,6 +1656,38 @@ Resources:
                         KeyType: HASH
                   Projection:
                       ProjectionType: ALL
+            BillingMode: PAY_PER_REQUEST
+
+    BookmarksTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: 'Bookmarks'
+            AttributeDefinitions:
+                - AttributeName: userId
+                  AttributeType: S
+                - AttributeName: threadId
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: userId
+                  KeyType: HASH
+                - AttributeName: threadId
+                  KeyType: RANGE
+            BillingMode: PAY_PER_REQUEST
+
+    FollowsTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: 'Follows'
+            AttributeDefinitions:
+                - AttributeName: userId
+                  AttributeType: S
+                - AttributeName: targetUserId
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: userId
+                  KeyType: HASH
+                - AttributeName: targetUserId
+                  KeyType: RANGE
             BillingMode: PAY_PER_REQUEST
 
     # ============================

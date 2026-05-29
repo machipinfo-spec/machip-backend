@@ -20,6 +20,8 @@ export interface CreateEventPointRequest {
     url?: string | null;
     imageUrl?: string | null;
     userId: string;
+    iconEmoji?: string | null;
+    iconColor?: string | null;
 }
 
 export interface CreateEventPointResponse {
@@ -64,6 +66,8 @@ export class CreateEventPointUseCase {
                 null, // deletedAt
                 UserId.fromExisting(request.userId),
                 pointInfoId,
+                request.iconEmoji,
+                request.iconColor,
             );
 
             await this.mapRepository.save(pointInfo);
