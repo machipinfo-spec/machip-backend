@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetra Backend プロジェクト構成説明書</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #131b2e;
+            --bg-card: rgba(22, 30, 52, 0.7);
+            --bg-card-hover: rgba(29, 39, 68, 0.8);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(99, 102, 241, 0.4);
+            
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --accent-indigo: #6366f1;
+            --accent-cyan: #06b6d4;
+            --accent-violet: #8b5cf6;
+            --accent-rose: #f43f5e;
+            
+            --neon-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+            --neon-glow-cyan: 0 0 20px rgba(6, 182, 212, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            font-family: 'Outfit', 'Noto Sans JP', 'Inter', sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 共通スクロールバー */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-indigo);
+        }
+
+        /* コンテナ */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px 80px 20px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 40px;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px 15px;
+            }
+        }
+
+        /* サイドバー (目次) */
+        .sidebar {
+            position: sticky;
+            top: 40px;
+            height: fit-content;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: relative;
+                top: 0;
+            }
+        }
+
+        .sidebar-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 16px;
+            background: linear-gradient(to bottom, var(--accent-indigo), var(--accent-cyan));
+            border-radius: 2px;
+        }
+
+        .toc-list {
+            list-style: none;
+        }
+
+        .toc-item {
+            margin-bottom: 12px;
+        }
+
+        .toc-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .toc-link:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateX(4px);
+        }
+
+        .toc-link.active {
+            color: var(--text-primary);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.15));
+            border-left: 3px solid var(--accent-indigo);
+            font-weight: 600;
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        /* ヘッダーカード */
+        .header-card {
+            background: linear-gradient(135deg, rgba(19, 27, 46, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--neon-glow);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .header-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .badge {
+            background: linear-gradient(135deg, var(--accent-indigo), var(--accent-cyan));
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .main-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 2rem;
+            }
+        }
+
+        .main-desc {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 800px;
+        }
+
+        /* セクション共通カード */
+        .section-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 32px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .section-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--neon-glow);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 16px;
+        }
+
+        .section-icon {
+            font-size: 1.8rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #fff, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ターミナル風ツリー */
+        .terminal {
+            background: #05070c;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .terminal-header {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .terminal-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .t-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .t-btn.red { background: #ef4444; }
+        .t-btn.yellow { background: #f59e0b; }
+        .t-btn.green { background: #10b981; }
+
+        .terminal-title {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        .terminal-body {
+            padding: 20px;
+            overflow-x: auto;
+            color: #38bdf8; /* cyan-400 */
+        }
+
+        .tree-text {
+            white-space: pre;
+            color: #a5f3fc;
+            line-height: 1.5;
+        }
+
+        .tree-comment {
+            color: #64748b;
+        }
+
+        /* 詳細リストグリッド */
+        .grid-list {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .sub-section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 20px 0 12px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sub-section-title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-cyan);
+            display: inline-block;
+        }
+
+        .item-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 18px 24px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .item-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(99, 102, 241, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .item-name {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #fff;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.2s;
+        }
+
+        .item-name:hover {
+            color: var(--accent-cyan);
+        }
+
+        .item-name svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .item-tag {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .tag-dir {
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+
+        .tag-file {
+            background: rgba(99, 102, 241, 0.1);
+            color: #818cf8;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .item-desc {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .sub-list {
+            margin-top: 8px;
+            padding-left: 20px;
+            border-left: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sub-item {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .sub-item-name {
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        /* 除外対象エリア */
+        .exclusion-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .exclusion-card {
+            background: rgba(244, 63, 94, 0.02);
+            border: 1px solid rgba(244, 63, 94, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .exclusion-card:hover {
+            border-color: rgba(244, 63, 94, 0.3);
+            background: rgba(244, 63, 94, 0.04);
+            transform: translateY(-2px);
+        }
+
+        .exclusion-name {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.95rem;
+            color: var(--accent-rose);
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .exclusion-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* 矢印などのアイコンSVG */
+        .icon-folder {
+            color: #eab308; /* yellow-500 */
+        }
+        .icon-file {
+            color: #60a5fa; /* blue-400 */
+        }
+        .icon-setting {
+            color: #a855f7; /* purple-500 */
+        }
+
+        /* フッター */
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 24px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- サイドバー -->
+        <aside class="sidebar">
+            <div class="sidebar-title">目次</div>
+            <ul class="toc-list">
+                <li class="toc-item"><a href="#overview" class="toc-link active">概要</a></li>
+                <li class="toc-item"><a href="#structure" class="toc-link">ディレクトリ構造</a></li>
+                <li class="toc-item"><a href="#directories" class="toc-link">主要フォルダ</a></li>
+                <li class="toc-item"><a href="#files" class="toc-link">設定ファイル</a></li>
+                <li class="toc-item"><a href="#exclusions" class="toc-link">Git除外対象</a></li>
+            </ul>
+        </aside>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <!-- ヘッダーカード -->
+            <section id="overview" class="header-card">
+                <div class="header-content">
+                    <span class="badge">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        OFFICIAL DOCUMENTATION
+                    </span>
+                    <h1 class="main-title">Tetra Backend プロジェクト構成説明書</h1>
+                    <p class="main-desc">
+                        本ドキュメントは、プロジェクト（<code>tetra-backend</code>）のTOPディレクトリ配下にあるファイルおよびフォルダの構成とそれぞれの役割について視覚的に説明したものです。開発プロセスおよびファイル配置の理解にご活用ください。
+                    </p>
+                </div>
+            </section>
+
+            <!-- ディレクトリ構造 -->
+            <section id="structure" class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">📂</span>
+                    <h2 class="section-title">ディレクトリ・ファイル構造（概要）</h2>
+                </div>
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <div class="terminal-buttons">
+                            <span class="t-btn red"></span>
+                            <span class="t-btn yellow"></span>
+                            <span class="t-btn green"></span>
+                        </div>
+                        <div class="terminal-title">bash - project tree</div>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="tree-text">tetra-backend/
+├── <span style="color:#f59e0b">.aws-sam/</span>              <span class="tree-comment"># AWS SAMのビルド成果物・キャッシュ（Git除外）</span>
+├── <span style="color:#f59e0b">__tests__/</span>             <span class="tree-comment"># ユニットテストコード</span>
+│   └── <span style="color:#f59e0b">unit/</span>              <span class="tree-comment"># ユニットテスト用のテストシナリオ</span>
+├── <span style="color:#f59e0b">docs/</span>                  <span class="tree-comment"># ドキュメント関連（現在は空）</span>
+├── <span style="color:#f59e0b">dist/</span>                  <span class="tree-comment"># ビルド出力ディレクトリ（Git除外）</span>
+├── <span style="color:#f59e0b">events/</span>                <span class="tree-comment"># AWS SAMのローカル実行用のテストイベント（JSON）</span>
+├── <span style="color:#f59e0b">node_modules/</span>          <span class="tree-comment"># npm依存パッケージ（Git除外）</span>
+├── <span style="color:#f59e0b">secret/</span>                <span class="tree-comment"># 機密情報・認証情報（Firebaseサービスアカウント等、Git除外）</span>
+├── <span style="color:#f59e0b">src/</span>                   <span class="tree-comment"># アプリケーションソースコード</span>
+│   ├── <span style="color:#f59e0b">application/</span>       <span class="tree-comment"># アプリケーション層（ユースケース定義等）</span>
+│   ├── <span style="color:#f59e0b">domain/</span>            <span class="tree-comment"># ドメイン層（エンティティ、値オブジェクト等）</span>
+│   ├── <span style="color:#f59e0b">handlers/</span>          <span class="tree-comment"># エントリーポイントや基本ハンドラ</span>
+│   ├── <span style="color:#f59e0b">infrastructure/</span>    <span class="tree-comment"># インフラストラクチャ層（AWS, Firebaseなどの具象実装）</span>
+│   ├── <span style="color:#f59e0b">interfaces/</span>        <span class="tree-comment"># インターフェース層（API Gateway/SQS対応のハンドラ等）</span>
+│   └── <span style="color:#f59e0b">shared/</span>            <span class="tree-comment"># 共通のユーティリティやロガー</span>
+├── <span style="color:#f59e0b">tests/</span>                 <span class="tree-comment"># テスト共通設定</span>
+│   └── setup.ts           <span class="tree-comment"># Jestの共通セットアップファイル</span>
+├── .eslintignore          <span class="tree-comment"># ESLint解析対象外設定</span>
+├── .eslintrc.js           <span class="tree-comment"># ESLint（静的コード解析）設定</span>
+├── .gitignore             <span class="tree-comment"># Git除外設定ファイル</span>
+├── .npmignore             <span class="tree-comment"># npmパッケージ除外設定</span>
+├── .prettierrc.js         <span class="tree-comment"># Prettier（コードフォーマッタ）設定</span>
+├── LICENSE                <span class="tree-comment"># ライセンス定義ファイル</span>
+├── README.md              <span class="tree-comment"># プロジェクト概要・セットアップ手順</span>
+├── buildspec.yml          <span class="tree-comment"># AWS CodeBuild用のビルド定義ファイル</span>
+├── env.json               <span class="tree-comment"># ローカル環境変数定義ファイル</span>
+├── jest.config.js         <span class="tree-comment"># Jest テスト実行設定</span>
+├── package.json           <span class="tree-comment"># プロジェクト依存関係・実行スクリプト定義</span>
+├── samconfig.toml         <span class="tree-comment"># AWS SAM CLIの設定ファイル</span>
+├── swagger.yaml           <span class="tree-comment"># OpenAPI / Swagger API定義ファイル</span>
+├── template.yaml          <span class="tree-comment"># AWS SAMのCloudFormationテンプレートファイル</span>
+├── tsconfig.json          <span class="tree-comment"># TypeScriptコンパイル設定</span>
+└── tsconfig.test.json     <span class="tree-comment"># テストコード用TypeScript設定</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 主要フォルダ詳細 -->
+            <section id="directories" class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">🗂️</span>
+                    <h2 class="section-title">主要フォルダの詳細説明</h2>
+                </div>
+                <div class="grid-list">
+                    <!-- __tests__ -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/__tests__/" class="item-name">
+                                <svg class="icon-folder" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                __tests__
+                            </a>
+                            <span class="item-tag tag-dir">DIR</span>
+                        </div>
+                        <p class="item-desc">各種テストコード（主に <code>unit</code> 内のユニットテスト）を格納するフォルダ。</p>
+                    </div>
+
+                    <!-- docs -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/docs/" class="item-name">
+                                <svg class="icon-folder" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                docs
+                            </a>
+                            <span class="item-tag tag-dir">DIR</span>
+                        </div>
+                        <p class="item-desc">仕様書やプロジェクト構造説明書などの関連ドキュメントを配置するフォルダ。現在は空です。</p>
+                    </div>
+
+                    <!-- events -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/events/" class="item-name">
+                                <svg class="icon-folder" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                events
+                            </a>
+                            <span class="item-tag tag-dir">DIR</span>
+                        </div>
+                        <p class="item-desc"><code>sam local invoke</code> コマンド等でLambda関数をローカル実行する際に使用する、API Gateway等の疑似リクエストイベント（JSONファイル）が格納されています。</p>
+                    </div>
+
+                    <!-- src -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/src/" class="item-name">
+                                <svg class="icon-folder" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                src
+                            </a>
+                            <span class="item-tag tag-dir">DIR</span>
+                        </div>
+                        <p class="item-desc">バックエンドアプリケーションのメインソースコード群です。クリーンアーキテクチャやDDD（ドメイン駆動設計）の概念に基づいたレイヤー構成を採用しています：</p>
+                        <div class="sub-list">
+                            <div class="sub-item"><span class="sub-item-name">application/</span>: ユースケース（<code>CreateChatPointUseCase</code> 等）など、ビジネスロジックを実行するアプリケーション層。</div>
+                            <div class="sub-item"><span class="sub-item-name">domain/</span>: ドメインエンティティ（<code>pointInfo.ts</code> など）や値オブジェクトなどのコアロジックを配置するドメイン層。</div>
+                            <div class="sub-item"><span class="sub-item-name">handlers/</span>: Lambdaハンドラの共通定義などのエントリーポイント関連コード。</div>
+                            <div class="sub-item"><span class="sub-item-name">infrastructure/</span>: AWS DynamoDB（<code>DynamoMapRepository</code> 等）や Firebase、GCP、Cognito などの外部サービスとのやり取りを担う具象実装クラスを格納するインフラストラクチャ層。</div>
+                            <div class="sub-item"><span class="sub-item-name">interfaces/</span>: AWS API Gatewayの各エンドポイントやSQSトリガーに対応する、Lambdaエントリーハンドラ（<code>interfaces/handlers/</code>）などを配置するインターフェース層。</div>
+                            <div class="sub-item"><span class="sub-item-name">shared/</span>: ログ出力（<code>logger.ts</code>）やMIMEタイプ変換ヘルパーなど、プロジェクト全体で共有するユーティリティ。</div>
+                        </div>
+                    </div>
+
+                    <!-- tests -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/tests/" class="item-name">
+                                <svg class="icon-folder" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                tests
+                            </a>
+                            <span class="item-tag tag-dir">DIR</span>
+                        </div>
+                        <p class="item-desc">テスト用の共通構成。Jest実行前に実行される <code>setup.ts</code> などが配置されています。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 設定ファイル・ドキュメント -->
+            <section id="files" class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">⚙️</span>
+                    <h2 class="section-title">設定ファイル・ルートドキュメント</h2>
+                </div>
+                <div class="grid-list">
+                    <!-- .eslint* -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/.eslintrc.js" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                .eslintignore / .eslintrc.js
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">JavaScript/TypeScriptの静的コード解析ツール ESLint の設定および解析対象外指定ファイル。</p>
+                    </div>
+
+                    <!-- .gitignore -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/.gitignore" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                .gitignore
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">Gitリポジトリ管理から除外するディレクトリおよびファイルを定義します。</p>
+                    </div>
+
+                    <!-- .npmignore -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/.npmignore" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                .npmignore
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">npmパッケージ化やデプロイ時に含めないファイルを設定するファイル。</p>
+                    </div>
+
+                    <!-- .prettierrc.js -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/.prettierrc.js" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                .prettierrc.js
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">コードフォーマッタ Prettier のスタイルルール設定ファイル。</p>
+                    </div>
+
+                    <!-- LICENSE -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/LICENSE" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                LICENSE
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">プロジェクトのソフトウェアライセンス（MIT License）が明記されたファイル。</p>
+                    </div>
+
+                    <!-- README.md -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/README.md" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                README.md
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">プロジェクトの概要、構成、デプロイやテストの方法などを記述した基本ドキュメント。</p>
+                    </div>
+
+                    <!-- buildspec.yml -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/buildspec.yml" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                buildspec.yml
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">AWS CodeBuildがビルドやデプロイ時に使用する処理手順（フェーズごとのコマンド）を定義したファイル。</p>
+                    </div>
+
+                    <!-- env.json -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/env.json" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                env.json
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">ローカル実行時にLambda関数へ渡す環境変数を定義するJSONファイル。</p>
+                    </div>
+
+                    <!-- jest.config.js -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/jest.config.js" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                jest.config.js
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">テストフレームワーク Jest の設定ファイル。<code>tsconfig.test.json</code> を用いた TypeScript のトランスパイルやカバレッジ取得の設定が含まれます。</p>
+                    </div>
+
+                    <!-- package.json -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/package.json" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                package.json
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">依存ライブラリや開発用ライブラリ、およびビルド・テスト・デプロイ用スクリプト（<code>npm run compile</code>, <code>npm run build</code>, <code>npm run deploy-poc</code> 等）を管理するファイル。</p>
+                    </div>
+
+                    <!-- samconfig.toml -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/samconfig.toml" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                samconfig.toml
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">AWS SAM CLIで使用するデフォルトパラメータ（スタック名、S3バケット等のデプロイ設定）を記述する設定ファイル。</p>
+                    </div>
+
+                    <!-- swagger.yaml -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/swagger.yaml" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                swagger.yaml
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">OpenAPI 3.0 規格に基づき、提供するWeb APIのエンドポイントやリクエスト/レスポンススキーマを定義したAPI仕様書ファイル。</p>
+                    </div>
+
+                    <!-- template.yaml -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/template.yaml" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                template.yaml
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">AWS SAM（Serverless Application Model）仕様に基づき、Lambda関数、DynamoDBテーブル、Cognitoユーザープール、S3バケット、SQSキューなどのAWSリソースおよびそれらの権限（IAM）関係を定義するインフラテンプレート（CloudFormationの拡張）ファイル。</p>
+                    </div>
+
+                    <!-- tsconfig* -->
+                    <div class="item-card">
+                        <div class="item-header">
+                            <a href="file:///c:/Users/mosam/Documents/work/taira/git/tetra-backend/tsconfig.json" class="item-name">
+                                <svg class="icon-file" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                tsconfig.json / tsconfig.test.json
+                            </a>
+                            <span class="item-tag tag-file">FILE</span>
+                        </div>
+                        <p class="item-desc">TypeScriptのコンパイルオプション（ビルド用およびテストコード実行用）を定義するファイル。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Git除外対象 -->
+            <section id="exclusions" class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">🚫</span>
+                    <h2 class="section-title">Git除外対象（.gitignore）</h2>
+                </div>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                    機密情報の流出防止や、ビルド生成ファイルによる容量肥大化を避けるため、以下のリソースは Git 管理から明示的に除外されています。
+                </p>
+                <div class="exclusion-grid">
+                    <div class="exclusion-card">
+                        <div class="exclusion-name">node_modules/</div>
+                        <div class="exclusion-desc">npm パッケージ依存関係の実体。</div>
+                    </div>
+                    <div class="exclusion-card">
+                        <div class="exclusion-name">.aws-sam/</div>
+                        <div class="exclusion-desc">AWS SAMのビルド結果やキャッシュ、パッケージング用ファイル。</div>
+                    </div>
+                    <div class="exclusion-card">
+                        <div class="exclusion-name">dist/</div>
+                        <div class="exclusion-desc">TypeScriptのコンパイル出力ディレクトリ。</div>
+                    </div>
+                    <div class="exclusion-card">
+                        <div class="exclusion-name">secret/</div>
+                        <div class="exclusion-desc">Firebaseサービスアカウントの秘密鍵など、機密情報フォルダ。</div>
+                    </div>
+                    <div class="exclusion-card">
+                        <div class="exclusion-name">.env*</div>
+                        <div class="exclusion-desc">検証・ローカル用の機密環境変数ファイル。</div>
+                    </div>
+                    <div class="exclusion-card">
+                        <div class="exclusion-name">jest.config.js.map</div>
+                        <div class="exclusion-desc">ビルドにより副次生成されるテスト用のソースマップファイル。</div>
+                    </div>
+                    <div class="exclusion-card">
+                        <div class="exclusion-name">test.md / *.json / *.ps1</div>
+                        <div class="exclusion-desc">一時的なスクリプトやポリシー定義、テスト用マークダウンなど。</div>
+                    </div>
+                    <div class="exclusion-card">
+                        <div class="exclusion-name">.git/</div>
+                        <div class="exclusion-desc">Git の変更履歴・管理メタデータ。</div>
+                    </div>
+                </div>
+            </section>
+
+            <footer>
+                <p>&copy; 2026 Tetra Backend Documentation. Generated by Antigravity.</p>
+            </footer>
+        </main>
+    </div>
+
+    <!-- サイドバーアクティブクラス制御の簡易スクリプト -->
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    const id = entry.target.getAttribute('id');
+                    const link = document.querySelector(`.toc-link[href="#${id}"]`);
+                    if (entry.isIntersecting) {
+                        document.querySelectorAll('.toc-link').forEach(l => l.classList.remove('active'));
+                        if (link) link.classList.add('active');
+                    }
+                });
+            }, { threshold: 0.2, rootMargin: "-100px 0px -70% 0px" });
+
+            document.querySelectorAll('section').forEach(section => {
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>

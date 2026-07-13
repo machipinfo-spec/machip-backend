@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetra Backend ソフトウェアアーキテクチャ & 設計パターン説明書</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #131b2e;
+            --bg-card: rgba(22, 30, 52, 0.7);
+            --bg-card-hover: rgba(29, 39, 68, 0.8);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(99, 102, 241, 0.4);
+            
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --accent-indigo: #6366f1;
+            --accent-cyan: #06b6d4;
+            --accent-violet: #8b5cf6;
+            --accent-rose: #f43f5e;
+            
+            --neon-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+            --neon-glow-cyan: 0 0 20px rgba(6, 182, 212, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.04) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.04) 0%, transparent 40%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            font-family: 'Outfit', 'Noto Sans JP', 'Inter', sans-serif;
+            line-height: 1.65;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 共通スクロールバー */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-indigo);
+        }
+
+        /* レイアウトコンテナ */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px 80px 20px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 40px;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px 15px;
+            }
+        }
+
+        /* サイドバー (目次) */
+        .sidebar {
+            position: sticky;
+            top: 40px;
+            height: fit-content;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 10;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: relative;
+                top: 0;
+            }
+        }
+
+        .sidebar-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 16px;
+            background: linear-gradient(to bottom, var(--accent-indigo), var(--accent-cyan));
+            border-radius: 2px;
+        }
+
+        .toc-list {
+            list-style: none;
+        }
+
+        .toc-item {
+            margin-bottom: 12px;
+        }
+
+        .toc-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .toc-link:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateX(4px);
+        }
+
+        .toc-link.active {
+            color: var(--text-primary);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.15));
+            border-left: 3px solid var(--accent-indigo);
+            font-weight: 600;
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        /* ヘッダーカード */
+        .header-card {
+            background: linear-gradient(135deg, rgba(19, 27, 46, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--neon-glow);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .header-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .badge {
+            background: linear-gradient(135deg, var(--accent-indigo), var(--accent-cyan));
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .main-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 1.8rem;
+            }
+        }
+
+        .main-desc {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            max-width: 800px;
+        }
+
+        /* セクションカード */
+        .section-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 32px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .section-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--neon-glow);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 16px;
+        }
+
+        .section-icon {
+            font-size: 1.8rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #fff, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* アーキテクチャ図 (SVG) */
+        .diagram-container {
+            background: #080c14;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: auto;
+        }
+
+        .diagram-svg {
+            max-width: 100%;
+            height: auto;
+            min-width: 600px;
+        }
+
+        /* テキスト書式 */
+        h3.block-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #fff;
+            margin: 28px 0 14px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        h3.block-title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-cyan);
+            display: inline-block;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-size: 0.98rem;
+        }
+
+        strong {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        /* コードブロック */
+        pre {
+            background: #05070c;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.88rem;
+            overflow-x: auto;
+            color: #a5f3fc;
+            margin-bottom: 20px;
+        }
+
+        code {
+            font-family: 'Fira Code', monospace;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: var(--accent-cyan);
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+            font-size: inherit;
+        }
+
+        /* ハイライト表示 */
+        .card-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .pattern-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .pattern-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(99, 102, 241, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .pattern-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pattern-title svg {
+            width: 20px;
+            height: 20px;
+            color: var(--accent-indigo);
+        }
+
+        /* アラート・注意書き */
+        .callout {
+            background: rgba(99, 102, 241, 0.08);
+            border-left: 4px solid var(--accent-indigo);
+            border-radius: 0 8px 8px 0;
+            padding: 16px 20px;
+            margin: 20px 0;
+            color: var(--text-secondary);
+        }
+
+        .callout-title {
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* フッター */
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 24px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- サイドバー (目次) -->
+        <aside class="sidebar">
+            <div class="sidebar-title">設計ドキュメント</div>
+            <ul class="toc-list">
+                <li class="toc-item"><a href="#overview" class="toc-link active">全体像</a></li>
+                <li class="toc-item"><a href="#layer" class="toc-link">レイヤー構造</a></li>
+                <li class="toc-item"><a href="#patterns" class="toc-link">適用設計パターン</a></li>
+                <li class="toc-item"><a href="#moderation-flow" class="toc-link">非同期検閲フロー</a></li>
+                <li class="toc-item"><a href="#auth-cognito" class="toc-link">Cognito認証フロー</a></li>
+            </ul>
+        </aside>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <!-- ヘッダーカード -->
+            <section id="overview" class="header-card">
+                <div class="header-content">
+                    <span class="badge">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        ARCHITECTURE & PATTERNS
+                    </span>
+                    <h1 class="main-title">ソフトウェアアーキテクチャ & 設計パターン</h1>
+                    <p class="main-desc">
+                        本プロジェクト（<code>tetra-backend</code>）のシステム構成、適用されている設計パターン、および各レイヤー・非同期処理等の具体的な実装構造を体系的に解説します。
+                    </p>
+                </div>
+            </section>
+
+            <!-- アーキテクチャのレイヤー構造 -->
+            <section id="layer" class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">💎</span>
+                    <h2 class="section-title">全体アーキテクチャとレイヤー構造</h2>
+                </div>
+                <p>
+                    本システムは <strong>AWS SAM (Serverless Application Model)</strong> を基盤とし、API Gateway と Lambda を使った完全なサーバーレスアーキテクチャを採用しています。<br>
+                    また、バックエンドプログラムの構造には<strong>クリーンアーキテクチャ</strong>および <strong>DDD (ドメイン駆動設計)</strong> の考え方を取り入れたレイヤー設計を適用し、インフラ（DynamoDBや外部API等）への依存を切り離した、保守性とテスタビリティの高い設計を実現しています。
+                </p>
+
+                <!-- Draw.io インタラクティブダイアグラム -->
+                <div class="diagram-container" style="padding:0; overflow:hidden; border:1px solid rgba(255,255,255,0.08); border-radius:12px;">
+                    <div id="drawio-container" style="width:100%; height:550px; background-color:#0b0f19;"></div>
+                </div>
+
+                <!-- Raw XML data for the Draw.io Viewer -->
+                <script type="text/xml" id="drawio-xml">
+<mxfile host="65bd71144e">
+    <diagram id="aws-architecture-diagram" name="Tetra Backend AWS Architecture">
+        <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" background="#0B0F19" math="0" shadow="0">
+            <root>
+                <!-- Layer 0 -->
+                <mxCell id="0"/>
+                <!-- Layer 1 -->
+                <mxCell id="1" parent="0"/>
+
+                <!-- Groups / Boundaries -->
+                <mxCell id="aws_cloud" value="AWS Cloud (ap-northeast-1)" style="rounded=1;arcSize=8;dashed=0;strokeColor=#FF9900;strokeWidth=2;fillColor=none;fontColor=#FF9900;fontStyle=1;align=left;verticalAlign=top;spacingLeft=15;spacingTop=15;" vertex="1" parent="1">
+                    <mxGeometry x="160" y="40" width="740" height="740" as="geometry"/>
+                </mxCell>
+                <mxCell id="client_zone" value="User / Client App" style="rounded=1;arcSize=8;dashed=1;strokeColor=#94A3B8;strokeWidth=1;fillColor=none;fontColor=#94A3B8;fontStyle=1;align=center;verticalAlign=top;spacingTop=15;" vertex="1" parent="1">
+                    <mxGeometry x="940" y="40" width="200" height="740" as="geometry"/>
+                </mxCell>
+                <mxCell id="external_services" value="External Services" style="rounded=1;arcSize=8;dashed=1;strokeColor=#F43F5E;strokeWidth=1;fillColor=none;fontColor=#F43F5E;fontStyle=1;align=left;verticalAlign=top;spacingLeft=15;spacingTop=15;" vertex="1" parent="1">
+                    <mxGeometry x="20" y="400" width="120" height="380" as="geometry"/>
+                </mxCell>
+
+                <!-- Client Side Components -->
+                <mxCell id="client" value="Client App&lt;br&gt;(Next.js Web)" style="rounded=1;fillColor=#1E293B;strokeColor=#334155;fontColor=#F1F5F9;align=center;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="980" y="160" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="admin_portal" value="Admin Portal&lt;br&gt;(React SPA)" style="rounded=1;fillColor=#1E293B;strokeColor=#334155;fontColor=#F1F5F9;align=center;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="980" y="360" width="120" height="80" as="geometry"/>
+                </mxCell>
+
+                <!-- Public Entry Points (AWS) -->
+                <mxCell id="amplify_hosting" value="AWS Amplify&lt;br&gt;(Hosting / SDK)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF9900;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.amplify;" vertex="1" parent="1">
+                    <mxGeometry x="760" y="50" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="apigw_public" value="API Gateway&lt;br&gt;(Tetra API / Prod)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.api_gateway;" vertex="1" parent="1">
+                    <mxGeometry x="760" y="180" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="apigw_admin" value="API Gateway&lt;br&gt;(Tetra Admin API)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.api_gateway;" vertex="1" parent="1">
+                    <mxGeometry x="760" y="330" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="cognito" value="Cognito&lt;br&gt;(UserPool / Auth)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF4F8B;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.cognito;" vertex="1" parent="1">
+                    <mxGeometry x="760" y="480" width="80" height="80" as="geometry"/>
+                </mxCell>
+
+                <!-- AWS Lambda Core Layer -->
+                <mxCell id="lambda_user" value="Lambda&lt;br&gt;(User / Profile)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF9900;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.lambda;" vertex="1" parent="1">
+                    <mxGeometry x="520" y="100" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="lambda_map" value="Lambda&lt;br&gt;(Map / Points)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF9900;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.lambda;" vertex="1" parent="1">
+                    <mxGeometry x="520" y="220" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="lambda_timeline" value="Lambda&lt;br&gt;(Timeline / Thread)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF9900;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.lambda;" vertex="1" parent="1">
+                    <mxGeometry x="520" y="340" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="lambda_admin" value="Lambda&lt;br&gt;(Admin Inbox)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF9900;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.lambda;" vertex="1" parent="1">
+                    <mxGeometry x="520" y="460" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="lambda_moderation" value="Lambda&lt;br&gt;(Moderation Worker)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF9900;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.lambda;" vertex="1" parent="1">
+                    <mxGeometry x="260" y="560" width="80" height="80" as="geometry"/>
+                </mxCell>
+
+                <!-- Messaging Queue -->
+                <mxCell id="sqs_queue" value="SQS Queue&lt;br&gt;(ContentModeration)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#F58536;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.sqs;" vertex="1" parent="1">
+                    <mxGeometry x="400" y="560" width="80" height="80" as="geometry"/>
+                </mxCell>
+
+                <!-- Persistence (AWS) -->
+                <mxCell id="dynamodb" value="DynamoDB&lt;br&gt;(NoSQL Tables)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#3B48CC;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.dynamodb;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="220" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3_images" value="S3 Bucket&lt;br&gt;(Image Storage)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#E05243;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.s3;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="100" width="80" height="80" as="geometry"/>
+                </mxCell>
+
+                <!-- External Services -->
+                <mxCell id="firebase" value="Firebase FCM&lt;br&gt;(Push Notification)" style="rounded=1;fillColor=#FFCB2B;strokeColor=none;fontColor=#0B0F19;align=center;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="40" y="440" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="deepseek" value="DeepSeek AI&lt;br&gt;(Content Check)" style="rounded=1;fillColor=#1D4ED8;strokeColor=none;fontColor=#FFFFFF;align=center;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="40" y="560" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="google_maps" value="Google Maps&lt;br&gt;(Reverse Geocode)" style="rounded=1;fillColor=#34A853;strokeColor=none;fontColor=#FFFFFF;align=center;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="40" y="680" width="80" height="80" as="geometry"/>
+                </mxCell>
+
+                <!-- Connections (Edges) -->
+                
+                <!-- Amplify to Client (Hosting) -->
+                <mxCell id="edge_amplify_host" value="Deploy / Host" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;fontColor=#F1F5F9;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="amplify_hosting" target="client">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Client to Cognito / API Gateway -->
+                <mxCell id="edge_client_auth" value="Auth Token" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FF4F8B;strokeWidth=2;fillColor=none;fontColor=#F1F5F9;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;" edge="1" parent="1" source="client" target="cognito">
+                    <mxGeometry x="0.5" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="920" y="220"/>
+                            <mxPoint x="920" y="520"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge_client_apigw" value="HTTPS REST" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;fontColor=#F1F5F9;" edge="1" parent="1" source="client" target="apigw_public">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_admin_apigw" value="HTTPS REST" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;fontColor=#F1F5F9;" edge="1" parent="1" source="admin_portal" target="apigw_admin">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Client to External APIs (Google Maps / Firebase) -->
+                <mxCell id="edge_client_google" value="Render Maps (JS SDK)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F43F5E;strokeWidth=1.5;fillColor=none;fontColor=#F1F5F9;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="client" target="google_maps">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1040" y="260"/>
+                            <mxPoint x="1040" y="760"/>
+                            <mxPoint x="80" y="760"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge_firebase_client" value="FCM Push Notification" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F43F5E;strokeWidth=1.5;fillColor=none;fontColor=#F1F5F9;entryX=0;entryY=0.25;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="firebase" target="client">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="140" y="480"/>
+                            <mxPoint x="910" y="480"/>
+                            <mxPoint x="910" y="180"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- API Gateway to Lambda Handlers -->
+                <mxCell id="edge_apigw_public_lambda" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;" edge="1" parent="1" source="apigw_public">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="600" y="200" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <!-- Branching to map, user, timeline -->
+                <mxCell id="edge_apigw_map" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;entryX=1;entryY=0.5;" edge="1" parent="1" source="apigw_public" target="lambda_map">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_apigw_user" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;entryX=1;entryY=0.5;" edge="1" parent="1" source="apigw_public" target="lambda_user">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_apigw_timeline" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;entryX=1;entryY=0.5;" edge="1" parent="1" source="apigw_public" target="lambda_timeline">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_apigw_admin_lambda" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;entryX=1;entryY=0.5;" edge="1" parent="1" source="apigw_admin" target="lambda_admin">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Lambda to DynamoDB -->
+                <mxCell id="edge_lambda_user_db" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;" edge="1" parent="1" source="lambda_user" target="dynamodb">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_lambda_map_db" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;" edge="1" parent="1" source="lambda_map" target="dynamodb">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_lambda_timeline_db" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;" edge="1" parent="1" source="lambda_timeline" target="dynamodb">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_lambda_admin_db" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="lambda_admin" target="dynamodb">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Lambda to S3 -->
+                <mxCell id="edge_lambda_user_s3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;" edge="1" parent="1" source="lambda_user" target="s3_images">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_lambda_map_s3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;" edge="1" parent="1" source="lambda_map" target="s3_images">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Timeline Lambda to SQS (Enqueue) -->
+                <mxCell id="edge_lambda_timeline_sqs" value="Enqueue" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8B5CF6;strokeWidth=2;fillColor=none;fontColor=#F1F5F9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="lambda_timeline" target="sqs_queue">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- SQS Queue to Moderation Worker (Trigger) -->
+                <mxCell id="edge_sqs_moderation" value="Trigger" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8B5CF6;strokeWidth=2;fillColor=none;fontColor=#F1F5F9;" edge="1" parent="1" source="sqs_queue" target="lambda_moderation">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Moderation Worker to DeepSeek / DynamoDB -->
+                <mxCell id="edge_moderation_deepseek" value="AI Check" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F43F5E;strokeWidth=1.5;fillColor=none;fontColor=#F1F5F9;" edge="1" parent="1" source="lambda_moderation" target="deepseek">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_moderation_db" value="Save History" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;fontColor=#F1F5F9;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="lambda_moderation" target="dynamodb">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="320" y="500"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- Map Lambda to Google Maps -->
+                <mxCell id="edge_map_google" value="Geocode" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F43F5E;strokeWidth=1.5;fillColor=none;fontColor=#F1F5F9;entryX=0.5;entryY=0;exitX=0;exitY=0.75;" edge="1" parent="1" source="lambda_map" target="google_maps">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="220" y="280"/>
+                            <mxPoint x="220" y="500"/>
+                            <mxPoint x="80" y="500"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- Admin Lambda to Firebase FCM -->
+                <mxCell id="edge_admin_firebase" value="Push Alert" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F43F5E;strokeWidth=1.5;fillColor=none;fontColor=#F1F5F9;entryX=0.5;entryY=1;exitX=0;exitY=0.5;" edge="1" parent="1" source="lambda_admin" target="firebase">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="500"/>
+                            <mxPoint x="180" y="540"/>
+                            <mxPoint x="80" y="540"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
+                </script>
+
+                <!-- Draw.io Viewer Loading/Initialization Script -->
+                <script type="text/javascript">
+                    window.addEventListener('DOMContentLoaded', () => {
+                        const xml = document.getElementById('drawio-xml').textContent.trim();
+                        const container = document.getElementById('drawio-container');
+                        
+                        // Create the mxgraph div dynamically
+                        const graphDiv = document.createElement('div');
+                        graphDiv.className = 'mxgraph';
+                        graphDiv.style.width = '100%';
+                        graphDiv.style.height = '100%';
+                        
+                        const config = {
+                            highlight: '#6366f1',
+                            nav: true,
+                            resize: true,
+                            toolbar: 'zoom layers',
+                            edit: '_blank',
+                            xml: xml
+                        };
+                        
+                        graphDiv.setAttribute('data-mxgraph', JSON.stringify(config));
+                        container.appendChild(graphDiv);
+                        
+                        // Load the Draw.io static viewer script
+                        const script = document.createElement('script');
+                        script.type = 'text/javascript';
+                        script.src = 'https://viewer.diagrams.net/js/viewer-static.min.js';
+                        document.body.appendChild(script);
+                    });
+                </script>
+
+
+                <h3 class="block-title">各レイヤーの責任境界</h3>
+                <ul>
+                    <li><strong>インターフェース層 (Interfaces - <code>src/interfaces/</code>)</strong>: API Gateway の HTTP リクエストや SQS トリガーなど外部からの入力を受け取ります。リクエスト検証、Lambda用のレスポンスの組み立て、および共通認可ハンドリングを行います。</li>
+                    <li><strong>アプリケーション層 (Application - <code>src/application/</code>)</strong>: 業務フローを表すユースケースクラスが定義されます。特定のドメインロジックの呼び出し順序や、抽象的なリポジトリインターフェースを介したデータ永続化の調整（オーケストレーション）を担います。</li>
+                    <li><strong>ドメイン層 (Domain - <code>src/domain/</code>)</strong>: 業務のルール（ドメイン知識）そのものを表現する最もコアなレイヤー。エンティティ（例: <code>PointInfo</code>）や値オブジェクト（例: <code>GeoLocation</code>, <code>Email</code>）が含まれ、外部フレームワークやライブラリに一切依存しない設計になっています。</li>
+                    <li><strong>インフラストラクチャ層 (Infrastructure - <code>src/infrastructure/</code>)</strong>: データベース（DynamoDB）、Firebase FCM（プッシュ通知）、SSMパラメータストア、外部のAI APIなど、各種ミドルウェア・外部I/Oとの通信のための具体的な実装を提供します。</li>
+                </ul>
+
+                <h3 class="block-title">AWS リソース管理コンソール一覧</h3>
+                <p>本プロジェクトが利用しているAWS上の各サービスインスタンスへのダイレクトリンクです（※閲覧には適切なAWSアカウントへのサインインが必要です）。</p>
+                <div class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin-top: 16px;">
+                    <!-- Amplify -->
+                    <div class="pattern-card" style="display:flex; flex-direction:column; justify-content:space-between; min-height:120px;">
+                        <div>
+                            <div class="pattern-title" style="font-size: 1rem; color: #ff9900;">
+                                <span style="font-size:1.2rem; margin-right:4px;">☁️</span> AWS Amplify
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">フロントエンドのホスティング & 配信プラットフォーム</p>
+                        </div>
+                        <a href="https://ap-northeast-1.console.aws.amazon.com/amplify/apps/d1cnxjebjhkixs/overview" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--accent-cyan); text-decoration: none; font-weight: 600;">コンソールを開く ↗</a>
+                    </div>
+                    <!-- API Gateway -->
+                    <div class="pattern-card" style="display:flex; flex-direction:column; justify-content:space-between; min-height:120px;">
+                        <div>
+                            <div class="pattern-title" style="font-size: 1rem; color: #a855f7;">
+                                <span style="font-size:1.2rem; margin-right:4px;">⚡</span> API Gateway
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">REST APIエンドポイントおよび各ルートの設定管理</p>
+                        </div>
+                        <a href="https://ap-northeast-1.console.aws.amazon.com/apigateway/main/apis?region=ap-northeast-1" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--accent-cyan); text-decoration: none; font-weight: 600;">コンソールを開く ↗</a>
+                    </div>
+                    <!-- Cognito -->
+                    <div class="pattern-card" style="display:flex; flex-direction:column; justify-content:space-between; min-height:120px;">
+                        <div>
+                            <div class="pattern-title" style="font-size: 1rem; color: #f43f5e;">
+                                <span style="font-size:1.2rem; margin-right:4px;">🔐</span> Cognito User Pool
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">認証ユーザープール <code>ap-northeast-1_4Ha4YMU2u</code> の管理</p>
+                        </div>
+                        <a href="https://ap-northeast-1.console.aws.amazon.com/cognito/v2/idp/user-pools/ap-northeast-1_4Ha4YMU2u/overview?region=ap-northeast-1" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--accent-cyan); text-decoration: none; font-weight: 600;">コンソールを開く ↗</a>
+                    </div>
+                    <!-- DynamoDB -->
+                    <div class="pattern-card" style="display:flex; flex-direction:column; justify-content:space-between; min-height:120px;">
+                        <div>
+                            <div class="pattern-title" style="font-size: 1rem; color: #3b48cc;">
+                                <span style="font-size:1.2rem; margin-right:4px;">💾</span> DynamoDB
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">データテーブル（ユーザー、スレッド等）の確認ダッシュボード</p>
+                        </div>
+                        <a href="https://ap-northeast-1.console.aws.amazon.com/dynamodbv2/home?region=ap-northeast-1#dashboard" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--accent-cyan); text-decoration: none; font-weight: 600;">コンソールを開く ↗</a>
+                    </div>
+                    <!-- SQS -->
+                    <div class="pattern-card" style="display:flex; flex-direction:column; justify-content:space-between; min-height:120px;">
+                        <div>
+                            <div class="pattern-title" style="font-size: 1rem; color: #f58536;">
+                                <span style="font-size:1.2rem; margin-right:4px;">✉️</span> SQS Queue
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">非同期検閲用メッセージキュー <code>tetra-content-moderation-queue-poc</code></p>
+                        </div>
+                        <a href="https://ap-northeast-1.console.aws.amazon.com/sqs/v3/home?region=ap-northeast-1#/queues/https%3A%2F%2Fsqs.ap-northeast-1.amazonaws.com%2F116274372147%2Ftetra-content-moderation-queue-poc" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--accent-cyan); text-decoration: none; font-weight: 600;">コンソールを開く ↗</a>
+                    </div>
+                    <!-- S3 -->
+                    <div class="pattern-card" style="display:flex; flex-direction:column; justify-content:space-between; min-height:120px;">
+                        <div>
+                            <div class="pattern-title" style="font-size: 1rem; color: #e05243;">
+                                <span style="font-size:1.2rem; margin-right:4px;">📦</span> S3 Bucket
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">画像保管用バケット <code>tetra-images-poc-116274372147</code> のオブジェクト確認</p>
+                        </div>
+                        <a href="https://ap-northeast-1.console.aws.amazon.com/s3/buckets/tetra-images-poc-116274372147?region=ap-northeast-1&tab=objects" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--accent-cyan); text-decoration: none; font-weight: 600;">コンソールを開く ↗</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 適用されている設計パターン -->
+            <section id="patterns" class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">🏗️</span>
+                    <h2 class="section-title">主要な適用設計パターン</h2>
+                </div>
+                <p>
+                    サーバーレス環境における保守性、拡張性、テスト容易性を確保するために、以下の設計パターンを徹底して適用しています。
+                </p>
+
+                <div class="card-grid">
+                    <!-- DIP -->
+                    <div class="pattern-card">
+                        <div class="pattern-title">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                            依存関係逆転の原則 (DIP) & リポジトリ
+                        </div>
+                        <p class="exclusion-desc" style="color:var(--text-secondary)">
+                            ドメイン層でデータベース等の接続仕様を抽象インターフェース（Repository）として定義し、インフラ層で具象（DynamoDB/Firestore）を実装します。これによりビジネスロジックが特定のデータベース技術に直接密結合するのを防ぎます。
+                        </p>
+                    </div>
+
+                    <!-- UseCase Pattern -->
+                    <div class="pattern-card">
+                        <div class="pattern-title">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            ユースケースパターン (単一責任)
+                        </div>
+                        <p class="exclusion-desc" style="color:var(--text-secondary)">
+                            <code>CreateChatPointUseCase</code> のように、1つの機能フローごとに1つのユースケースクラスを独立して定義します。コントローラーやハンドラがファットになるのを防ぎ、ユニットテストを各ユースケースごとに容易に作成できるようにしています。
+                        </p>
+                    </div>
+
+                    <!-- Value Object Pattern -->
+                    <div class="pattern-card">
+                        <div class="pattern-title">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+                            値オブジェクトパターン (Value Object)
+                        </div>
+                        <p class="exclusion-desc" style="color:var(--text-secondary)">
+                            <code>GeoLocation</code>（緯度経度検証）や <code>Email</code>、<code>AuthId</code> など、単なるプリミティブ型ではなく独自のイミュータブルなクラスとして実装。値の生成時に強力なバリデーションを実行し、システム全体に不正な値が伝播することを完全に防ぎます。
+                        </p>
+                    </div>
+
+                    <!-- Asynchronous Worker -->
+                    <div class="pattern-card">
+                        <div class="pattern-title">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            非同期ワーカー / キューパターン
+                        </div>
+                        <p class="exclusion-desc" style="color:var(--text-secondary)">
+                            APIの実行遅延を防ぐために、リアルタイム性が不要な「重い処理（AIを使用したテキスト検閲）」を SQS にキューイングします。API自体は即時レスポンスを返し、後ろの Lambda ワーカーが非同期で処理します。
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 非同期検閲フロー -->
+            <section id="moderation-flow" class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">⚡</span>
+                    <h2 class="section-title">非同期コンテンツ検閲（Content Moderation）フロー</h2>
+                </div>
+                <p>
+                    スレッド作成時に、AI（DeepSeek API）を用いたコンテンツの有害判定（検閲）を行う仕組みです。
+                    APIの遅延を抑えるため、非同期処理用のキューメッセージング構造が適用されています。
+                </p>
+
+                <h3 class="block-title">検閲のシーケンス</h3>
+                <pre><code>[Client App]          [API Lambda]            [SQS Queue]            [Moderation Lambda]        [DeepSeek API / DB]
+     |                     |                      |                         |                         |
+     |-- スレッド作成要求 ->|                      |                         |                         |
+     |                     |-- メッセージ送信 -->|                         |                         |
+     |                     |   (非同期検閲依頼)   |                         |                         |
+     |&lt;-- レスポンス返却 ---|                      |                         |                         |
+     |    (即時に作成完了) |                      |-- (SQSポーリング) ----&gt;|                         |
+     |                     |                      |                         |-- (AI検閲リクエスト) --&gt;|
+     |                     |                      |                         |&lt;-- 有害性チェック判定 --|
+     |                     |                      |                         |                         |
+     |                     |                      |                         |--- 判定結果を保存 -----&gt;| (DynamoDB: ContentModerationHistories)</code></pre>
+
+                <h3 class="block-title">非同期化のメリット</h3>
+                <p>
+                    AIによるコンテンツ判定には通常数百ミリ秒〜数秒の応答時間を要します。
+                    この判定をスレッド作成処理のHTTP応答サイクルから完全に排除し、SQSを介して非同期ワーカーに処理をバイパスすることで、ユーザーへのレスポンス性能を最大化しています。
+                </p>
+            </section>
+
+            <!-- Cognito認証フロー -->
+            <section id="auth-cognito" class="section-card">
+                <div class="section-header">
+                    <span class="section-icon">🔐</span>
+                    <h2 class="section-title">Cognito JWT 検証とステートレス認証</h2>
+                </div>
+                <p>
+                    バックエンドは各Lambdaに到達するリクエストが認可されたものであるかを判断するため、クライアントが送信した Cognito ID トークン（JWT）の署名検証をステートレスに実行します。
+                </p>
+
+                <h3 class="block-title">トークン検証の実装パターン（ハンドラ・ユーティリティ）</h3>
+                <p>
+                    各APIハンドラは <code>aws-jwt-verify</code> ライブラリを使用し、Cognitoの公開鍵情報をもとに署名、有効期限（exp）、およびクライアントIDを検証し、トークン内の <code>sub</code> クレームから <code>AuthId</code> を取得します。
+                </p>
+                <pre><code>import { CognitoJwtVerifier } from "aws-jwt-verify";
+
+export async function getAuthId(event: APIGatewayProxyEvent): Promise&lt;AuthId | null&gt; {
+  const authHeader = event.headers.Authorization || event.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  
+  const token = authHeader.substring(7);
+  const verifier = CognitoJwtVerifier.create({
+    userPoolId: process.env.COGNITO_USER_POOL_ID!,
+    tokenUse: "id",
+    clientId: process.env.COGNITO_CLIENT_ID!,
+  });
+  
+  try {
+    const payload = await verifier.verify(token);
+    return new AuthId(payload.sub);
+  } catch (err) {
+    logger.error("Token verification failed", err);
+    return null;
+  }
+}</code></pre>
+
+                <div class="callout">
+                    <div class="callout-title">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        ステートレス認可のメリット
+                    </div>
+                    <p style="margin-bottom:0">
+                        データベースに対する「セッション情報の問い合わせクエリ」を発行することなく、暗号数学的に有効なトークンであることをLambda内で完結して判定できるため、セッションストアの負荷軽減と、Lambda関数のスケール時の極めて低いAPIレイテンシーを実現しています。
+                    </p>
+                </div>
+            </section>
+
+            <footer>
+                <p>&copy; 2026 Tetra Backend Documentation. Generated by Antigravity.</p>
+            </footer>
+        </main>
+    </div>
+
+    <!-- スクロール検知による目次アクティブ表示切り替えのJS -->
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const links = document.querySelectorAll('.toc-link');
+            const sections = document.querySelectorAll('section');
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '-100px 0px -70% 0px',
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        links.forEach(link => {
+                            if (link.getAttribute('href') === `#${id}`) {
+                                link.classList.add('active');
+                            } else {
+                                link.classList.remove('active');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => observer.observe(section));
+        });
+    </script>
+</body>
+</html>
