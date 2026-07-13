@@ -1,0 +1,216 @@
+<mxfile host="65bd71144e">
+    <diagram id="aws-architecture-diagram" name="Tetra Backend AWS Architecture">
+        <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" background="#0B0F19" math="0" shadow="0">
+            <root>
+                <!-- Layer 0 -->
+                <mxCell id="0"/>
+                <!-- Layer 1 -->
+                <mxCell id="1" parent="0"/>
+
+                <!-- Groups / Boundaries -->
+                <mxCell id="aws_cloud" value="AWS Cloud (ap-northeast-1)" style="rounded=1;arcSize=8;dashed=0;strokeColor=#FF9900;strokeWidth=2;fillColor=none;fontColor=#FF9900;fontStyle=1;align=left;verticalAlign=top;spacingLeft=15;spacingTop=15;" vertex="1" parent="1">
+                    <mxGeometry x="160" y="40" width="740" height="740" as="geometry"/>
+                </mxCell>
+                <mxCell id="client_zone" value="User / Client App" style="rounded=1;arcSize=8;dashed=1;strokeColor=#94A3B8;strokeWidth=1;fillColor=none;fontColor=#94A3B8;fontStyle=1;align=center;verticalAlign=top;spacingTop=15;" vertex="1" parent="1">
+                    <mxGeometry x="940" y="40" width="200" height="740" as="geometry"/>
+                </mxCell>
+                <mxCell id="external_services" value="External Services" style="rounded=1;arcSize=8;dashed=1;strokeColor=#F43F5E;strokeWidth=1;fillColor=none;fontColor=#F43F5E;fontStyle=1;align=left;verticalAlign=top;spacingLeft=15;spacingTop=15;" vertex="1" parent="1">
+                    <mxGeometry x="20" y="400" width="120" height="380" as="geometry"/>
+                </mxCell>
+
+                <!-- Client Side Components -->
+                <mxCell id="client" value="Client App&lt;br&gt;(Next.js Web)" style="rounded=1;fillColor=#1E293B;strokeColor=#334155;fontColor=#F1F5F9;align=center;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="980" y="160" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="admin_portal" value="Admin Portal&lt;br&gt;(React SPA)" style="rounded=1;fillColor=#1E293B;strokeColor=#334155;fontColor=#F1F5F9;align=center;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="980" y="360" width="120" height="80" as="geometry"/>
+                </mxCell>
+
+                <!-- Public Entry Points (AWS) -->
+                <mxCell id="amplify_hosting" value="AWS Amplify&lt;br&gt;(Hosting / SDK)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF9900;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.amplify;" vertex="1" parent="1">
+                    <mxGeometry x="760" y="50" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="apigw_public" value="API Gateway&lt;br&gt;(Tetra API / Prod)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.api_gateway;" vertex="1" parent="1">
+                    <mxGeometry x="760" y="180" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="apigw_admin" value="API Gateway&lt;br&gt;(Tetra Admin API)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.api_gateway;" vertex="1" parent="1">
+                    <mxGeometry x="760" y="330" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="cognito" value="Cognito&lt;br&gt;(UserPool / Auth)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF4F8B;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.cognito;" vertex="1" parent="1">
+                    <mxGeometry x="760" y="480" width="80" height="80" as="geometry"/>
+                </mxCell>
+
+                <!-- AWS Lambda Core Layer -->
+                <mxCell id="lambda_user" value="Lambda&lt;br&gt;(User / Profile)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF9900;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.lambda;" vertex="1" parent="1">
+                    <mxGeometry x="520" y="100" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="lambda_map" value="Lambda&lt;br&gt;(Map / Points)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF9900;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.lambda;" vertex="1" parent="1">
+                    <mxGeometry x="520" y="220" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="lambda_timeline" value="Lambda&lt;br&gt;(Timeline / Thread)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF9900;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.lambda;" vertex="1" parent="1">
+                    <mxGeometry x="520" y="340" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="lambda_admin" value="Lambda&lt;br&gt;(Admin Inbox)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF9900;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.lambda;" vertex="1" parent="1">
+                    <mxGeometry x="520" y="460" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="lambda_moderation" value="Lambda&lt;br&gt;(Moderation Worker)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#FF9900;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.lambda;" vertex="1" parent="1">
+                    <mxGeometry x="260" y="560" width="80" height="80" as="geometry"/>
+                </mxCell>
+
+                <!-- Messaging Queue -->
+                <mxCell id="sqs_queue" value="SQS Queue&lt;br&gt;(ContentModeration)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#F58536;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.sqs;" vertex="1" parent="1">
+                    <mxGeometry x="400" y="560" width="80" height="80" as="geometry"/>
+                </mxCell>
+
+                <!-- Persistence (AWS) -->
+                <mxCell id="dynamodb" value="DynamoDB&lt;br&gt;(NoSQL Tables)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#3B48CC;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.dynamodb;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="220" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3_images" value="S3 Bucket&lt;br&gt;(Image Storage)" style="outlineConnect=0;fontColor=#F1F5F9;gradientColor=none;fillColor=#E05243;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.s3;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="100" width="80" height="80" as="geometry"/>
+                </mxCell>
+
+                <!-- External Services -->
+                <mxCell id="firebase" value="Firebase FCM&lt;br&gt;(Push Notification)" style="rounded=1;fillColor=#FFCB2B;strokeColor=none;fontColor=#0B0F19;align=center;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="40" y="440" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="deepseek" value="DeepSeek AI&lt;br&gt;(Content Check)" style="rounded=1;fillColor=#1D4ED8;strokeColor=none;fontColor=#FFFFFF;align=center;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="40" y="560" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="google_maps" value="Google Maps&lt;br&gt;(Reverse Geocode)" style="rounded=1;fillColor=#34A853;strokeColor=none;fontColor=#FFFFFF;align=center;whiteSpace=wrap;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="40" y="680" width="80" height="80" as="geometry"/>
+                </mxCell>
+
+                <!-- Connections (Edges) -->
+                
+                <!-- Amplify to Client (Hosting) -->
+                <mxCell id="edge_amplify_host" value="Deploy / Host" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;fontColor=#F1F5F9;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="amplify_hosting" target="client">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Client to Cognito / API Gateway -->
+                <mxCell id="edge_client_auth" value="Auth Token" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FF4F8B;strokeWidth=2;fillColor=none;fontColor=#F1F5F9;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;" edge="1" parent="1" source="client" target="cognito">
+                    <mxGeometry x="0.5" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="920" y="220"/>
+                            <mxPoint x="920" y="520"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge_client_apigw" value="HTTPS REST" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;fontColor=#F1F5F9;" edge="1" parent="1" source="client" target="apigw_public">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_admin_apigw" value="HTTPS REST" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;fontColor=#F1F5F9;" edge="1" parent="1" source="admin_portal" target="apigw_admin">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Client to External APIs (Google Maps / Firebase) -->
+                <mxCell id="edge_client_google" value="Render Maps (JS SDK)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F43F5E;strokeWidth=1.5;fillColor=none;fontColor=#F1F5F9;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="client" target="google_maps">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1040" y="260"/>
+                            <mxPoint x="1040" y="760"/>
+                            <mxPoint x="80" y="760"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge_firebase_client" value="FCM Push Notification" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F43F5E;strokeWidth=1.5;fillColor=none;fontColor=#F1F5F9;entryX=0;entryY=0.25;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="firebase" target="client">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="140" y="480"/>
+                            <mxPoint x="910" y="480"/>
+                            <mxPoint x="910" y="180"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- API Gateway to Lambda Handlers -->
+                <mxCell id="edge_apigw_public_lambda" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;" edge="1" parent="1" source="apigw_public">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="600" y="200" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <!-- Branching to map, user, timeline -->
+                <mxCell id="edge_apigw_map" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;entryX=1;entryY=0.5;" edge="1" parent="1" source="apigw_public" target="lambda_map">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_apigw_user" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;entryX=1;entryY=0.5;" edge="1" parent="1" source="apigw_public" target="lambda_user">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_apigw_timeline" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;entryX=1;entryY=0.5;" edge="1" parent="1" source="apigw_public" target="lambda_timeline">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_apigw_admin_lambda" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366F1;strokeWidth=2;fillColor=none;entryX=1;entryY=0.5;" edge="1" parent="1" source="apigw_admin" target="lambda_admin">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Lambda to DynamoDB -->
+                <mxCell id="edge_lambda_user_db" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;" edge="1" parent="1" source="lambda_user" target="dynamodb">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_lambda_map_db" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;" edge="1" parent="1" source="lambda_map" target="dynamodb">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_lambda_timeline_db" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;" edge="1" parent="1" source="lambda_timeline" target="dynamodb">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_lambda_admin_db" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="lambda_admin" target="dynamodb">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Lambda to S3 -->
+                <mxCell id="edge_lambda_user_s3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;" edge="1" parent="1" source="lambda_user" target="s3_images">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_lambda_map_s3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;" edge="1" parent="1" source="lambda_map" target="s3_images">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Timeline Lambda to SQS (Enqueue) -->
+                <mxCell id="edge_lambda_timeline_sqs" value="Enqueue" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8B5CF6;strokeWidth=2;fillColor=none;fontColor=#F1F5F9;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="lambda_timeline" target="sqs_queue">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- SQS Queue to Moderation Worker (Trigger) -->
+                <mxCell id="edge_sqs_moderation" value="Trigger" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#8B5CF6;strokeWidth=2;fillColor=none;fontColor=#F1F5F9;" edge="1" parent="1" source="sqs_queue" target="lambda_moderation">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Moderation Worker to DeepSeek / DynamoDB -->
+                <mxCell id="edge_moderation_deepseek" value="AI Check" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F43F5E;strokeWidth=1.5;fillColor=none;fontColor=#F1F5F9;" edge="1" parent="1" source="lambda_moderation" target="deepseek">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_moderation_db" value="Save History" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06B6D4;strokeWidth=1.5;fillColor=none;fontColor=#F1F5F9;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="lambda_moderation" target="dynamodb">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="320" y="500"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- Map Lambda to Google Maps -->
+                <mxCell id="edge_map_google" value="Geocode" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F43F5E;strokeWidth=1.5;fillColor=none;fontColor=#F1F5F9;entryX=0.5;entryY=0;exitX=0;exitY=0.75;" edge="1" parent="1" source="lambda_map" target="google_maps">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="220" y="280"/>
+                            <mxPoint x="220" y="500"/>
+                            <mxPoint x="80" y="500"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- Admin Lambda to Firebase FCM -->
+                <mxCell id="edge_admin_firebase" value="Push Alert" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F43F5E;strokeWidth=1.5;fillColor=none;fontColor=#F1F5F9;entryX=0.5;entryY=1;exitX=0;exitY=0.5;" edge="1" parent="1" source="lambda_admin" target="firebase">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="500"/>
+                            <mxPoint x="180" y="540"/>
+                            <mxPoint x="80" y="540"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
